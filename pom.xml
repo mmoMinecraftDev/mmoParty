@@ -61,7 +61,7 @@
         <dependency>
             <groupId>mmo.Core.mmoCore</groupId>
             <artifactId>mmoCore</artifactId>
-            <version>1.0</version>
+            <version>0.8</version>
         </dependency>
     </dependencies>
     <artifactId>mmoParty</artifactId>
