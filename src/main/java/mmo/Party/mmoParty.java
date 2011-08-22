@@ -24,11 +24,27 @@ import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.Tameable;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.Type;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.entity.EntityListener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerKickEvent;
+import org.bukkit.event.player.PlayerListener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
+import org.getspout.spoutapi.SpoutManager;
+import org.getspout.spoutapi.event.spout.SpoutCraftEnableEvent;
+import org.getspout.spoutapi.event.spout.SpoutListener;
+import org.getspout.spoutapi.gui.GenericContainer;
+import org.getspout.spoutapi.gui.WidgetAnchor;
+import org.getspout.spoutapi.player.SpoutPlayer;
 
 public class mmoParty extends JavaPlugin {
 
@@ -46,13 +62,14 @@ public class mmoParty extends JavaPlugin {
 		log = Logger.getLogger("Minecraft");
 		description = getDescription();
 
-		log("loading " + description.getFullName());
 
 		Party.mmo = mmo = mmo.create(this);
 		mmo.mmoParty = true;
 		mmo.setPluginName("Party");
-		mmo.setX(mmo.cfg.getInt("ui.default.left", 3));
-		mmo.setY(mmo.cfg.getInt("ui.default.top", 3));
+		mmo.cfg.getInt("ui.default.left", 3);
+		mmo.cfg.getInt("ui.default.top", 3);
+
+		mmo.log("loading " + description.getFullName());
 
 		// Default values
 		mmo.cfg.getBoolean("auto_update", true);
@@ -71,6 +88,9 @@ public class mmoParty extends JavaPlugin {
 		pm.registerEvent(Type.ENTITY_DAMAGE, pel, Priority.Highest, this);
 		pm.registerEvent(Type.PROJECTILE_HIT, pel, Priority.Highest, this); // craftbukkit 1000
 
+		mmoSpoutListener sl = new mmoSpoutListener();
+		pm.registerEvent(Type.CUSTOM_EVENT, sl, Priority.Normal, this);
+
 		Party.load();
 
 		for (Player player : server.getOnlinePlayers()) {
@@ -80,13 +100,13 @@ public class mmoParty extends JavaPlugin {
 		}
 
 		updateTask = server.getScheduler().scheduleSyncRepeatingTask(this,
-			new Runnable() {
+				  new Runnable() {
 
-				@Override
-				public void run() {
-					Party.updateAll();
-				}
-			}, 20, 20);
+					  @Override
+					  public void run() {
+						  Party.updateAll();
+					  }
+				  }, 20, 20);
 	}
 
 	@Override
@@ -94,7 +114,7 @@ public class mmoParty extends JavaPlugin {
 		server.getScheduler().cancelTask(updateTask);
 		Party.save();
 		Party.clear();
-		log("Disabled " + description.getFullName());
+		mmo.log("Disabled " + description.getFullName());
 		mmo.autoUpdate();
 		mmo.mmoParty = false;
 	}
@@ -249,7 +269,120 @@ public class mmoParty extends JavaPlugin {
 		return false;
 	}
 
-	protected static void log(String text) {
-		log.log(Level.INFO, "[" + description.getName() + "] " + text);
+	public class mmoSpoutListener extends SpoutListener {
+
+		@Override
+		public void onSpoutCraftEnable(SpoutCraftEnableEvent event) {
+			SpoutPlayer player = SpoutManager.getPlayer(event.getPlayer());
+			GenericContainer container = new GenericContainer();
+			container.setAlign(WidgetAnchor.TOP_LEFT)
+				.setAnchor(WidgetAnchor.TOP_LEFT)
+				.setX(mmo.cfg.getInt("ui.default.left", 3))
+				.setY(mmo.cfg.getInt("ui.default.top", 3))
+				.setWidth(427)
+				.setHeight(240)
+				.setFixed(true);
+			Party.containers.put(player, container);
+			player.getMainScreen().attachWidget(mmo.plugin, container);
+			Party.update(player);
+		}
+	}
+
+	public class mmoPartyEntityListener extends EntityListener {
+
+		@Override
+		public void onEntityDamage(EntityDamageEvent event) {
+			if (event.isCancelled()) {
+				return;
+			}
+			if (mmoParty.mmo.cfg.getBoolean("no_party_pvp", true)) {
+				Player attacker = null, defender = null;
+				if (event.getEntity() instanceof Player) {
+					defender = (Player) event.getEntity();
+				} else if (event.getEntity() instanceof Tameable) {
+					Tameable pet = (Tameable) event.getEntity();
+					if (pet.isTamed() && pet.getOwner() instanceof Player) {
+						defender = (Player) pet.getOwner();
+					}
+				}
+				if (defender != null) {
+					if (event.getCause() == DamageCause.ENTITY_ATTACK) {
+						EntityDamageByEntityEvent e = (EntityDamageByEntityEvent) event;
+						if (e.getDamager() instanceof Player) {
+							attacker = (Player) e.getDamager();
+						} else if (e.getDamager() instanceof Tameable) {
+							Tameable pet = (Tameable) e.getDamager();
+							if (pet.isTamed() && pet.getOwner() instanceof Player) {
+								defender = (Player) pet.getOwner();
+							}
+						}
+					}
+				} else if (event.getCause() == DamageCause.PROJECTILE) {
+					EntityDamageByEntityEvent e = (EntityDamageByEntityEvent) event;
+					Projectile arrow = (Projectile) e.getDamager();
+					if (arrow.getShooter() instanceof Player) {
+						attacker = (Player) arrow.getShooter();
+					}
+				}
+				if (attacker != null && Party.isSameParty(attacker, defender)) {
+					mmoParty.mmo.sendMessage(attacker, "Can't attack your own party!");
+					event.setCancelled(true);
+				}
+			}
+		}
+	}
+
+	public class mmoPartyPlayerListener extends PlayerListener {
+
+		@Override
+		public void onPlayerJoin(PlayerJoinEvent event) {
+			Player player = event.getPlayer();
+			Party party = Party.find(player);
+			if (party == null) {
+				//ToDo: Catch this Leak
+				new Party(player.getName());
+			} else {
+				List<Party> invites = Party.findInvites(player);
+				if (!invites.isEmpty()) {
+					String output = "Invitations from: ";
+					boolean first = true;
+					for (Party invite : invites) {
+						if (!first) {
+							output += ", ";
+						}
+						output += mmoParty.mmo.name(invite.getLeader());
+						first = false;
+					}
+					mmoParty.mmo.sendMessage(player, output);
+				}
+			}
+			Party.update(player);
+		}
+
+		@Override
+		public void onPlayerQuit(PlayerQuitEvent event) {
+			Party.containers.remove(event.getPlayer());
+			Party party = Party.find(event.getPlayer());
+			if (party != null) {
+				if (!party.isParty() && !party.hasInvites()) {
+					Party.delete(party);
+				} else {
+					party.update();
+				}
+			}
+		}
+
+		@Override
+		public void onPlayerKick(PlayerKickEvent event) {
+			Party.containers.remove(event.getPlayer());
+			Party party = Party.find(event.getPlayer());
+			if (party != null) {
+				if (!party.isParty() && !party.hasInvites()) {
+					Party.delete(party);
+				} else {
+					party.update();
+				}
+			}
+		}
 	}
 }

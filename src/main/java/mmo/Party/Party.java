@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import mmo.Core.GenericLivingEntity;
 import mmo.Core.mmo;
 import org.bukkit.ChatColor;
 import org.bukkit.Server;
@@ -32,6 +33,9 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
 import org.bukkit.util.config.Configuration;
+import org.getspout.spoutapi.gui.Container;
+import org.getspout.spoutapi.gui.GenericContainer;
+import org.getspout.spoutapi.gui.Widget;
 
 public class Party {
 
@@ -53,6 +57,10 @@ public class Party {
 	 * The name of the party leader.
 	 */
 	protected String leader;
+	/**
+	 * A map of player containers, each container is their party bar
+	 */
+	protected static HashMap<Player, GenericContainer> containers = new HashMap<Player, GenericContainer>();
 
 	/**
 	 * Constructor.
@@ -572,34 +580,27 @@ public class Party {
 		if (mmo.hasSpout && members.size() > 1 || mmo.cfg.getBoolean("always_show", true)) {
 			boolean show_pets = mmo.cfg.getBoolean("show_pets", true);
 
-			for (String member : members) {
-				Player player = server.getPlayer(member);
-				if (player != null) {
-					perPlayer data = perPlayer.get(player);
-					data.armor = mmo.getArmor(player);
-					data.health = mmo.getHealth(player);
-					if (show_pets) {
-						data.pets = mmo.getPets(player);
-					}
-				}
-			}
 			for (Player player : getMembers()) {
-				if (player != null) {
-					perPlayer data = perPlayer.get(player);
-					int index = 0;
+				Container container = containers.get(player);
 
+				if (container != null) {
+					int index = 0;
+					Widget[] bars = container.getChildren();
 					for (String name : members.meFirst(player.getName())) {
-						perPlayer pdata = perPlayer.get(name);
-						Player pmember = server.getPlayer(name);
-						boolean isOnline = pmember != null && pmember.isOnline() ? true : false;
-						data.getHealthBar(index++).setArmor(isOnline ? pdata.armor : 0).setHealth(isOnline ? pdata.health : 0).setLabel((isLeader(name) ? ChatColor.GREEN + "@" : "") + (isOnline ? ChatColor.YELLOW : ChatColor.GRAY), pdata.getName());
-						if (show_pets && isOnline && pdata.pets != null && !pdata.pets.isEmpty()) {
-							for (LivingEntity pet : pdata.pets) {
-								data.getHealthBar(index++).setArmor(-1).setHealth(mmo.getHealth((Entity) pet)).setLabel(ChatColor.AQUA + mmo.getSimpleName((LivingEntity) pet), "");
-							}
+						GenericLivingEntity bar;
+						if (index >= bars.length) {
+							container.addChild(bar = new GenericLivingEntity());
+						} else {
+							bar = (GenericLivingEntity)bars[index];
 						}
+						bar.setEntity(name, isLeader(name) ? ChatColor.GREEN + "@" : "");
+						bar.setTargets(show_pets ? mmo.getPets(server.getPlayer(name)) : null);
+						index++;
 					}
-					data.clearHealthBar(index);
+					while (index < bars.length) {
+						container.removeChild(bars[index--]);
+					}
+					container.updateLayout();
 				}
 			}
 		}
@@ -637,7 +638,7 @@ public class Party {
 					Tameable pet = pets.get(member);
 					if (player.getName().equals(((Player) pet.getOwner()).getName())) {
 						output += "\n" + mmo.makeBar(ChatColor.RED, mmo.getHealth((Entity) pet)) + mmo.makeBar(ChatColor.BLACK, 0);
-						output += ChatColor.WHITE + "+ " + ChatColor.AQUA + " " + mmo.getSimpleName((LivingEntity) pet);
+						output += ChatColor.WHITE + "+ " + ChatColor.AQUA + " " + mmo.getSimpleName((LivingEntity) pet, false);
 					}
 				}
 			}
