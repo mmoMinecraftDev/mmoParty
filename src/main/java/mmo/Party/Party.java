@@ -598,7 +598,7 @@ public class Party {
 						index++;
 					}
 					while (index < bars.length) {
-						container.removeChild(bars[index--]);
+						container.removeChild(bars[index++]);
 					}
 					container.updateLayout();
 				}
