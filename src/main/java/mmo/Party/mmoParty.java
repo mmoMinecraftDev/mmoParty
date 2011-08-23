@@ -17,8 +17,6 @@
 package mmo.Party;
 
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import mmo.Core.mmo;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
@@ -48,7 +46,7 @@ import org.getspout.spoutapi.player.SpoutPlayer;
 
 public class mmoParty extends JavaPlugin {
 
-	private static Logger log;
+
 	protected static Server server;
 	protected static PluginManager pm;
 	protected static PluginDescriptionFile description;
@@ -59,9 +57,7 @@ public class mmoParty extends JavaPlugin {
 	public void onEnable() {
 		server = getServer();
 		pm = server.getPluginManager();
-		log = Logger.getLogger("Minecraft");
 		description = getDescription();
-
 
 		Party.mmo = mmo = mmo.create(this);
 		mmo.mmoParty = true;
