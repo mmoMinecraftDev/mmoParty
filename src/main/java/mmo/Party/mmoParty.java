@@ -41,7 +41,6 @@ import org.getspout.spoutapi.SpoutManager;
 import org.getspout.spoutapi.event.spout.SpoutCraftEnableEvent;
 import org.getspout.spoutapi.event.spout.SpoutListener;
 import org.getspout.spoutapi.gui.GenericContainer;
-import org.getspout.spoutapi.gui.WidgetAnchor;
 import org.getspout.spoutapi.player.SpoutPlayer;
 
 public class mmoParty extends JavaPlugin {
@@ -62,6 +61,7 @@ public class mmoParty extends JavaPlugin {
 		Party.mmo = mmo = mmo.create(this);
 		mmo.mmoParty = true;
 		mmo.setPluginName("Party");
+		mmo.cfg.getString("ui.default.align", "TOP_LEFT");
 		mmo.cfg.getInt("ui.default.left", 3);
 		mmo.cfg.getInt("ui.default.top", 3);
 
@@ -270,14 +270,7 @@ public class mmoParty extends JavaPlugin {
 		@Override
 		public void onSpoutCraftEnable(SpoutCraftEnableEvent event) {
 			SpoutPlayer player = SpoutManager.getPlayer(event.getPlayer());
-			GenericContainer container = new GenericContainer();
-			container.setAlign(WidgetAnchor.TOP_LEFT)
-				.setAnchor(WidgetAnchor.TOP_LEFT)
-				.setX(mmo.cfg.getInt("ui.default.left", 3))
-				.setY(mmo.cfg.getInt("ui.default.top", 3))
-				.setWidth(427)
-				.setHeight(240)
-				.setFixed(true);
+			GenericContainer container = mmo.getContainer();
 			Party.containers.put(player, container);
 			player.getMainScreen().attachWidget(mmo.plugin, container);
 			Party.update(player);
