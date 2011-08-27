@@ -318,7 +318,7 @@ public class Party {
 			mmo.sendMessage(player, "You haven't been invited.");
 			return false;
 		}
-		decline(player);
+		invites.remove(invites.indexOf(player.getName()));
 		if (members.size() >= mmo.cfg.getInt("max_party_size", 6)) {
 			mmo.sendMessage(player, "There isn't any space for you.");
 			return false;

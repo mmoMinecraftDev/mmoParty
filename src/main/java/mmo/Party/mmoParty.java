@@ -17,6 +17,7 @@
 package mmo.Party;
 
 import java.util.List;
+import mmo.Chat.Chat;
 import mmo.Core.mmo;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
@@ -44,7 +45,6 @@ import org.getspout.spoutapi.gui.GenericContainer;
 import org.getspout.spoutapi.player.SpoutPlayer;
 
 public class mmoParty extends JavaPlugin {
-
 
 	protected static Server server;
 	protected static PluginManager pm;
@@ -75,6 +75,10 @@ public class mmoParty extends JavaPlugin {
 		mmo.cfg.getBoolean("show_pets", true);
 		mmo.cfg.save();
 
+		if (mmo.mmoChat) {
+			Chat.addFilter(new ChannelParty());
+		}
+		
 		mmoPartyPlayerListener ppl = new mmoPartyPlayerListener();
 		pm.registerEvent(Type.PLAYER_JOIN, ppl, Priority.Monitor, this);
 		pm.registerEvent(Type.PLAYER_QUIT, ppl, Priority.Monitor, this);
@@ -125,7 +129,15 @@ public class mmoParty extends JavaPlugin {
 			Party party = Party.find(player);
 			boolean isParty = party == null ? false : party.isParty();
 			boolean isLeader = party == null ? true : party.isLeader(player);
-			if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
+			if (args.length == 0) {
+				//<editor-fold defaultstate="collapsed" desc="/party">
+				if (mmo.mmoChat) {
+					Chat.doChat("Party", player, "");
+				} else {
+					return false;
+				}
+				//</editor-fold>
+			} else if (args[0].equalsIgnoreCase("help")) {
 				//<editor-fold defaultstate="collapsed" desc="/party OR /party help">
 				mmo.sendMessage(player, "Party commands:");
 				mmo.sendMessage(player, "/party status");
@@ -146,6 +158,9 @@ public class mmoParty extends JavaPlugin {
 				}
 				if (isParty && isLeader) {
 					mmo.sendMessage(player, "/party kick <player>");
+				}
+				if (isParty && mmo.mmoChat) {
+					mmo.sendMessage(player, "/party <message>");
 				}
 				//</editor-fold>
 			} else if (args[0].equalsIgnoreCase("status")) {
@@ -256,8 +271,16 @@ public class mmoParty extends JavaPlugin {
 				}
 				//</editor-fold>
 			} else {
-				//<editor-fold defaultstate="collapsed" desc="unknown">
-				return false;
+				//<editor-fold defaultstate="collapsed" desc="/party <message>">
+				if (mmo.mmoChat) {
+					String output = "";
+					for (String word : args) {
+						output += word + " ";
+					}
+					Chat.doChat("Party", player, output.trim());
+				} else {
+					return false;
+				}
 				//</editor-fold>
 			}
 			return true;
@@ -305,17 +328,17 @@ public class mmoParty extends JavaPlugin {
 								defender = (Player) pet.getOwner();
 							}
 						}
+					} else if (event.getCause() == DamageCause.PROJECTILE) {
+						EntityDamageByEntityEvent e = (EntityDamageByEntityEvent) event;
+						Projectile arrow = (Projectile) e.getDamager();
+						if (arrow.getShooter() instanceof Player) {
+							attacker = (Player) arrow.getShooter();
+						}
 					}
-				} else if (event.getCause() == DamageCause.PROJECTILE) {
-					EntityDamageByEntityEvent e = (EntityDamageByEntityEvent) event;
-					Projectile arrow = (Projectile) e.getDamager();
-					if (arrow.getShooter() instanceof Player) {
-						attacker = (Player) arrow.getShooter();
+					if (attacker != null && Party.isSameParty(attacker, defender)) {
+						mmoParty.mmo.sendMessage(attacker, "Can't attack your own party!");
+						event.setCancelled(true);
 					}
-				}
-				if (attacker != null && Party.isSameParty(attacker, defender)) {
-					mmoParty.mmo.sendMessage(attacker, "Can't attack your own party!");
-					event.setCancelled(true);
 				}
 			}
 		}
