@@ -1,8 +1,9 @@
 name: mmoParty
 main: mmo.Party.mmoParty
-version: 0.15
+version: 1.0
 website: http://forums.bukkit.org/threads/31055/
 author: Rycochet <rycochet@rycochet.com>
+database: true
 depend: [mmoCore]
 softdepend: [mmoChat]
 

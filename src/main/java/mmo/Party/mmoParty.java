@@ -16,9 +16,12 @@
  */
 package mmo.Party;
 
+import java.util.ArrayList;
 import java.util.List;
+import javax.persistence.PersistenceException;
 import mmo.Chat.Chat;
 import mmo.Core.mmo;
+import mmo.Core.mmoPlugin;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -35,7 +38,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.getspout.spoutapi.SpoutManager;
@@ -44,7 +46,7 @@ import org.getspout.spoutapi.event.spout.SpoutListener;
 import org.getspout.spoutapi.gui.GenericContainer;
 import org.getspout.spoutapi.player.SpoutPlayer;
 
-public class mmoParty extends JavaPlugin {
+public class mmoParty extends mmoPlugin {
 
 	protected static Server server;
 	protected static PluginManager pm;
@@ -52,6 +54,10 @@ public class mmoParty extends JavaPlugin {
 	protected static mmo mmo;
 	private int updateTask;
 
+	public mmoParty() {
+		classes.add(PartyDB.class);
+	}
+	
 	@Override
 	public void onEnable() {
 		server = getServer();
@@ -75,10 +81,8 @@ public class mmoParty extends JavaPlugin {
 		mmo.cfg.getBoolean("show_pets", true);
 		mmo.cfg.save();
 
-		if (mmo.mmoChat) {
-			Chat.addFilter(new ChannelParty());
-		}
-		
+		getDatabase().find(PartyDB.class);//.findRowCount();
+
 		mmoPartyPlayerListener ppl = new mmoPartyPlayerListener();
 		pm.registerEvent(Type.PLAYER_JOIN, ppl, Priority.Monitor, this);
 		pm.registerEvent(Type.PLAYER_QUIT, ppl, Priority.Monitor, this);
@@ -88,8 +92,8 @@ public class mmoParty extends JavaPlugin {
 		pm.registerEvent(Type.ENTITY_DAMAGE, pel, Priority.Highest, this);
 		pm.registerEvent(Type.PROJECTILE_HIT, pel, Priority.Highest, this); // craftbukkit 1000
 
-		mmoSpoutListener sl = new mmoSpoutListener();
-		pm.registerEvent(Type.CUSTOM_EVENT, sl, Priority.Normal, this);
+		pm.registerEvent(Type.CUSTOM_EVENT, new mmoSpoutListener(), Priority.Normal, this);
+		pm.registerEvent(Type.CUSTOM_EVENT, new ChannelParty(), Priority.Normal, this);
 
 		Party.load();
 

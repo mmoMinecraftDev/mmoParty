@@ -16,24 +16,48 @@
  */
 package mmo.Party;
 
-import java.util.HashSet;
-import mmo.Core.mmoChatEvent;
-import mmo.Core.mmoListener;
-import org.bukkit.entity.Player;
+import com.avaje.ebean.validation.NotEmpty;
+import com.avaje.ebean.validation.NotNull;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-public class ChannelParty  extends mmoListener {
+@Entity()
+@Table(name = "mmo_Party")
+public class PartyDB {
 
-	@Override
-	public void onMMOChat(mmoChatEvent event) {
-		if (event.hasFilter("Party")) {
-			Player from = event.getPlayer();
-			Party party = Party.find(from);
-			HashSet<Player> recipients = (HashSet<Player>) event.getRecipients();
-			for (Player to : new HashSet<Player>(recipients)) {
-				if (party == null || party != Party.find(to)) {
-					recipients.remove(to);
-				}
-			}
-		}
+	@Id
+	@NotNull
+	@NotEmpty
+	private String leader;
+
+	@NotNull
+	private String members;
+
+	@NotNull
+	private String invites;
+
+	public String getLeader() {
+		return leader;
+	}
+
+	public void setLeader(String leader) {
+		this.leader = leader;
+	}
+
+	public String getMembers() {
+		return members;
+	}
+
+	public void setMembers(String members) {
+		this.members = members;
+	}
+
+	public String getInvites() {
+		return invites;
+	}
+
+	public void setInvites(String invites) {
+		this.invites = invites;
 	}
 }

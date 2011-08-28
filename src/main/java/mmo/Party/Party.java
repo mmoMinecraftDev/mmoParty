@@ -106,10 +106,17 @@ public class Party {
 	 * Load all parties and invites.
 	 */
 	protected static void load() {
-		Configuration cfg = new Configuration(new File(mmo.plugin.getDataFolder(), "parties.yml"));
-		cfg.load();
-		for (String leader : cfg.getKeys()) {
-			new Party(leader, cfg.getString(leader + ".members", ""), cfg.getString(leader + ".invites", ""));
+//		Configuration cfg = new Configuration(new File(mmo.plugin.getDataFolder(), "parties.yml"));
+//		cfg.load();
+//		for (String leader : cfg.getKeys()) {
+//			new Party(leader, cfg.getString(leader + ".members", ""), cfg.getString(leader + ".invites", ""));
+//		}
+		try {
+//			mmo.log("Loading: " + mmo.plugin.getDatabase().find(PartyDB.class).setAutofetch(true).findList());
+			for (PartyDB row : mmo.plugin.getDatabase().find(PartyDB.class).setAutofetch(true).findList()) {
+				new Party(row.getLeader(), row.getMembers(), row.getInvites());
+			}
+		} catch (Exception e) {
 		}
 	}
 
@@ -117,17 +124,20 @@ public class Party {
 	 * Save all parties and invites.
 	 */
 	protected static void save() {
-		Configuration cfg = new Configuration(new File(mmo.plugin.getDataFolder(), "parties.yml"));
-		cfg.setHeader("#mmoParty list of party members + invites");
-		synchronized (parties) {
-			for (Party party : parties) {
-				if (party.isParty() || !party.invites.isEmpty()) {
-					cfg.setProperty(party.leader + ".members", party.getMemberNames());
-					cfg.setProperty(party.leader + ".invites", party.getInviteNames());
+		for (Party party : parties) {
+			PartyDB row = mmo.plugin.getDatabase().find(PartyDB.class).where().ieq("leader", party.leader).findUnique();
+			if (party.isParty() || !party.invites.isEmpty()) {
+				if (row == null) {
+					row = new PartyDB();
+					row.setLeader(party.leader);
 				}
+				row.setMembers(party.getMemberNames());
+				row.setInvites(party.getInviteNames());
+				mmo.plugin.getDatabase().save(row);
+			} else if (row != null) {
+				mmo.plugin.getDatabase().delete(row);
 			}
 		}
-		cfg.save();
 	}
 
 	/**
@@ -591,7 +601,7 @@ public class Party {
 						if (index >= bars.length) {
 							container.addChild(bar = new GenericLivingEntity());
 						} else {
-							bar = (GenericLivingEntity)bars[index];
+							bar = (GenericLivingEntity) bars[index];
 						}
 						bar.setEntity(name, isLeader(name) ? ChatColor.GREEN + "@" : "");
 						bar.setTargets(show_pets ? mmo.getPets(server.getPlayer(name)) : null);
