@@ -1,6 +1,6 @@
 name: mmoParty
 main: mmo.Party.mmoParty
-version: 1.0
+version: 1.1
 website: http://forums.bukkit.org/threads/31055/
 author: Rycochet <rycochet@rycochet.com>
 database: true
