@@ -16,9 +16,7 @@
  */
 package mmo.Party;
 
-import java.util.ArrayList;
 import java.util.List;
-import javax.persistence.PersistenceException;
 import mmo.Chat.Chat;
 import mmo.Core.mmo;
 import mmo.Core.mmoPlugin;
@@ -292,7 +290,7 @@ public class mmoParty extends mmoPlugin {
 		return false;
 	}
 
-	public class mmoSpoutListener extends SpoutListener {
+	private static class mmoSpoutListener extends SpoutListener {
 
 		@Override
 		public void onSpoutCraftEnable(SpoutCraftEnableEvent event) {
@@ -304,7 +302,7 @@ public class mmoParty extends mmoPlugin {
 		}
 	}
 
-	public class mmoPartyEntityListener extends EntityListener {
+	private static class mmoPartyEntityListener extends EntityListener {
 
 		@Override
 		public void onEntityDamage(EntityDamageEvent event) {
@@ -348,7 +346,7 @@ public class mmoParty extends mmoPlugin {
 		}
 	}
 
-	public class mmoPartyPlayerListener extends PlayerListener {
+	private static class mmoPartyPlayerListener extends PlayerListener {
 
 		@Override
 		public void onPlayerJoin(PlayerJoinEvent event) {
