@@ -19,6 +19,8 @@ package mmo.Party;
 import java.util.List;
 import mmo.Chat.Chat;
 import mmo.Core.mmo;
+import mmo.Core.mmoListener;
+import mmo.Core.mmoPVPDamageEvent;
 import mmo.Core.mmoPlugin;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
@@ -86,10 +88,7 @@ public class mmoParty extends mmoPlugin {
 		pm.registerEvent(Type.PLAYER_QUIT, ppl, Priority.Monitor, this);
 		pm.registerEvent(Type.PLAYER_KICK, ppl, Priority.Monitor, this);
 
-		mmoPartyEntityListener pel = new mmoPartyEntityListener();
-		pm.registerEvent(Type.ENTITY_DAMAGE, pel, Priority.Highest, this);
-		pm.registerEvent(Type.PROJECTILE_HIT, pel, Priority.Highest, this); // craftbukkit 1000
-
+		pm.registerEvent(Type.CUSTOM_EVENT, new mmoPartyEntityListener(), Priority.Highest, this);
 		pm.registerEvent(Type.CUSTOM_EVENT, new mmoSpoutListener(), Priority.Normal, this);
 		pm.registerEvent(Type.CUSTOM_EVENT, new ChannelParty(), Priority.Normal, this);
 
@@ -302,46 +301,13 @@ public class mmoParty extends mmoPlugin {
 		}
 	}
 
-	private static class mmoPartyEntityListener extends EntityListener {
+	private static class mmoPartyEntityListener extends mmoListener {
 
 		@Override
-		public void onEntityDamage(EntityDamageEvent event) {
-			if (event.isCancelled()) {
-				return;
-			}
-			if (mmoParty.mmo.cfg.getBoolean("no_party_pvp", true)) {
-				Player attacker = null, defender = null;
-				if (event.getEntity() instanceof Player) {
-					defender = (Player) event.getEntity();
-				} else if (event.getEntity() instanceof Tameable) {
-					Tameable pet = (Tameable) event.getEntity();
-					if (pet.isTamed() && pet.getOwner() instanceof Player) {
-						defender = (Player) pet.getOwner();
-					}
-				}
-				if (defender != null) {
-					if (event.getCause() == DamageCause.ENTITY_ATTACK) {
-						EntityDamageByEntityEvent e = (EntityDamageByEntityEvent) event;
-						if (e.getDamager() instanceof Player) {
-							attacker = (Player) e.getDamager();
-						} else if (e.getDamager() instanceof Tameable) {
-							Tameable pet = (Tameable) e.getDamager();
-							if (pet.isTamed() && pet.getOwner() instanceof Player) {
-								attacker = (Player) pet.getOwner();
-							}
-						}
-					} else if (event.getCause() == DamageCause.PROJECTILE) {
-						EntityDamageByEntityEvent e = (EntityDamageByEntityEvent) event;
-						Projectile arrow = (Projectile) e.getDamager();
-						if (arrow.getShooter() instanceof Player) {
-							attacker = (Player) arrow.getShooter();
-						}
-					}
-					if (attacker != null && Party.isSameParty(attacker, defender)) {
-						mmoParty.mmo.sendMessage(attacker, "Can't attack your own party!");
-						event.setCancelled(true);
-					}
-				}
+		public void onMMOPVPDamage(mmoPVPDamageEvent event) {
+			if (Party.isSameParty(event.getAttacker(), event.getDefender())) {
+				mmoParty.mmo.sendMessage(event.getAttacker(), "Can't attack your own party!");
+				event.setCancelled(true);
 			}
 		}
 	}
