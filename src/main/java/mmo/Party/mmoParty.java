@@ -327,7 +327,7 @@ public class mmoParty extends mmoPlugin {
 						} else if (e.getDamager() instanceof Tameable) {
 							Tameable pet = (Tameable) e.getDamager();
 							if (pet.isTamed() && pet.getOwner() instanceof Player) {
-								defender = (Player) pet.getOwner();
+								attacker = (Player) pet.getOwner();
 							}
 						}
 					} else if (event.getCause() == DamageCause.PROJECTILE) {
