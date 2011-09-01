@@ -17,14 +17,15 @@
 package mmo.Party;
 
 import java.util.HashSet;
-import mmo.Core.mmoChatEvent;
-import mmo.Core.mmoListener;
+
+import mmo.Core.MMOChatEvent;
+import mmo.Core.MMOListener;
 import org.bukkit.entity.Player;
 
-public class ChannelParty  extends mmoListener {
+public class ChannelParty  extends MMOListener {
 
 	@Override
-	public void onMMOChat(mmoChatEvent event) {
+	public void onMMOChat(MMOChatEvent event) {
 		if (event.hasFilter("Party")) {
 			Player from = event.getPlayer();
 			Party party = Party.find(from);
