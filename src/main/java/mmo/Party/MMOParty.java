@@ -17,11 +17,11 @@
 package mmo.Party;
 
 import java.util.List;
+import mmo.Chat.Chat;
 import mmo.Core.MMO;
 import mmo.Core.MMOListener;
 import mmo.Core.MMOPVPDamageEvent;
 import mmo.Core.MMOPlugin;
-import mmo.Chat.*;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -51,7 +51,7 @@ public class MMOParty extends MMOPlugin {
 	public MMOParty() {
 		classes.add(PartyDB.class);
 	}
-	
+
 	@Override
 	public void onEnable() {
 		server = getServer();
@@ -300,7 +300,7 @@ public class MMOParty extends MMOPlugin {
 		@Override
 		public void onMMOPVPDamage(MMOPVPDamageEvent event) {
 			if (Party.isSameParty(event.getAttacker(), event.getDefender())) {
-				MMOParty.mmo.sendMessage(event.getAttacker(), "Can't attack your own party!");
+				mmo.sendMessage(event.getAttacker(), "Can't attack your own party!");
 				event.setCancelled(true);
 			}
 		}
@@ -327,7 +327,7 @@ public class MMOParty extends MMOPlugin {
 						output += MMO.name(invite.getLeader());
 						first = false;
 					}
-					MMOParty.mmo.sendMessage(player, output);
+					mmo.sendMessage(player, output);
 				}
 			}
 			Party.update(player);

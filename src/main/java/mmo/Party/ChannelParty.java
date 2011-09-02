@@ -22,7 +22,7 @@ import mmo.Core.MMOChatEvent;
 import mmo.Core.MMOListener;
 import org.bukkit.entity.Player;
 
-public class ChannelParty  extends MMOListener {
+public class ChannelParty extends MMOListener {
 
 	@Override
 	public void onMMOChat(MMOChatEvent event) {
