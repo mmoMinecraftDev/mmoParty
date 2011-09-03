@@ -70,8 +70,8 @@
 			<version>dev</version>
 		</dependency>
 	</dependencies>
-	<artifactId>MMOParty</artifactId>
-	<name>MMOParty</name>
+	<artifactId>mmoParty</artifactId>
+	<name>mmoParty</name>
 	<version>dev</version>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
