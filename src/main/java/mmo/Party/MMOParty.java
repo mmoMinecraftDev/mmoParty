@@ -73,6 +73,7 @@ public class MMOParty extends MMOPlugin {
 		mmo.cfg.getBoolean("always_show", true);
 		mmo.cfg.getBoolean("no_party_pvp", true);
 		mmo.cfg.getBoolean("show_pets", true);
+		mmo.cfg.getBoolean("leave_on_quit", false);
 		mmo.cfg.save();
 
 		getDatabase().find(PartyDB.class);//.findRowCount();
@@ -333,13 +334,14 @@ public class MMOParty extends MMOPlugin {
 			Party.update(player);
 		}
 
-		@Override
-		public void onPlayerQuit(PlayerQuitEvent event) {
-			Party.containers.remove(event.getPlayer());
-			Party party = Party.find(event.getPlayer());
+		public void PlayerQuit(Player player) {
+			Party.containers.remove(player);
+			Party party = Party.find(player);
 			if (party != null) {
 				if (!party.isParty() && !party.hasInvites()) {
 					Party.delete(party);
+				} else if (mmo.cfg.getBoolean("leave_on_quit", false)) {
+					party.leave(player);
 				} else {
 					party.update();
 				}
@@ -347,16 +349,13 @@ public class MMOParty extends MMOPlugin {
 		}
 
 		@Override
+		public void onPlayerQuit(PlayerQuitEvent event) {
+			PlayerQuit(event.getPlayer());
+		}
+
+		@Override
 		public void onPlayerKick(PlayerKickEvent event) {
-			Party.containers.remove(event.getPlayer());
-			Party party = Party.find(event.getPlayer());
-			if (party != null) {
-				if (!party.isParty() && !party.hasInvites()) {
-					Party.delete(party);
-				} else {
-					party.update();
-				}
-			}
+			PlayerQuit(event.getPlayer());
 		}
 	}
 }
