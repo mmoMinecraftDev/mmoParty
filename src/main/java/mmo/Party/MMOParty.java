@@ -72,6 +72,7 @@ public class MMOParty extends MMOPlugin {
 		mmo.cfg.getInt("max_party_size", 6);
 		mmo.cfg.getBoolean("always_show", true);
 		mmo.cfg.getBoolean("no_party_pvp", true);
+		mmo.cfg.getBoolean("no_party_pvp_quiet", false);
 		mmo.cfg.getBoolean("show_pets", true);
 		mmo.cfg.getBoolean("leave_on_quit", false);
 		mmo.cfg.save();
@@ -300,8 +301,10 @@ public class MMOParty extends MMOPlugin {
 
 		@Override
 		public void onMMOPVPDamage(MMODamageEvent event) {
-			if (Party.isSameParty((Player) event.getAttacker(), (Player) event.getDefender())) {
-				mmo.sendMessage((Player) event.getAttacker(), "Can't attack your own party!");
+			if (mmo.cfg.getBoolean("no_party_pvp", true) && Party.isSameParty((Player) event.getAttacker(), (Player) event.getDefender())) {
+				if (mmo.cfg.getBoolean("no_party_pvp_quiet", false)) {
+					mmo.sendMessage((Player) event.getAttacker(), "Can't attack your own party!");
+				}
 				event.setCancelled(true);
 			}
 		}
