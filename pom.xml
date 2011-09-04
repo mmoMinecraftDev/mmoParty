@@ -71,7 +71,7 @@
 	<name>mmoParty</name>
 	<artifactId>mmoParty</artifactId>
 	<groupId>mmo.Party.MMOParty</groupId>
-	<url>http://forums.bukkit.org/threads/31055/</url>
+	<url>http://github.com/mmoMinecraftDev/mmoParty</url>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
