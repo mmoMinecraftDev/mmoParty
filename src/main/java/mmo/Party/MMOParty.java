@@ -92,7 +92,15 @@ public class MMOParty extends MMOPlugin {
 
 		for (Player player : server.getOnlinePlayers()) {
 			if (Party.find(player) == null) {
+				//ToDo: Catch this Leak
 				new Party(player.getName());
+			}
+			SpoutPlayer splayer = SpoutManager.getPlayer(player);
+			if (splayer.isSpoutCraftEnabled()) {
+				GenericContainer container = mmo.getContainer();
+				Party.containers.put(player, container);
+				splayer.getMainScreen().attachWidget(mmo.plugin, container);
+				Party.update(player);
 			}
 		}
 
