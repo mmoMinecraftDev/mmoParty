@@ -21,7 +21,7 @@ import java.util.List;
 import mmo.Chat.Chat;
 import mmo.Core.MMO;
 import mmo.Core.MMOListener;
-import mmo.Core.MMODamageEvent;
+import mmo.Core.events.MMODamageEvent;
 import mmo.Core.MMOPlugin;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;

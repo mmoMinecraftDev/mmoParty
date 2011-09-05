@@ -18,7 +18,7 @@ package mmo.Party;
 
 import java.util.HashSet;
 
-import mmo.Core.MMOChatEvent;
+import mmo.Core.events.MMOChatEvent;
 import mmo.Core.MMOListener;
 import org.bukkit.entity.Player;
 
