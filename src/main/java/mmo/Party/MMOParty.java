@@ -16,13 +16,13 @@
  */
 package mmo.Party;
 
+import java.util.ArrayList;
 import java.util.List;
 import mmo.Chat.Chat;
 import mmo.Core.MMO;
 import mmo.Core.MMOListener;
 import mmo.Core.MMODamageEvent;
 import mmo.Core.MMOPlugin;
-import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -32,8 +32,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginManager;
+import org.bukkit.util.config.Configuration;
 import org.getspout.spoutapi.SpoutManager;
 import org.getspout.spoutapi.event.spout.SpoutCraftEnableEvent;
 import org.getspout.spoutapi.event.spout.SpoutListener;
@@ -42,40 +41,24 @@ import org.getspout.spoutapi.player.SpoutPlayer;
 
 public class MMOParty extends MMOPlugin {
 
-	protected static Server server;
-	protected static PluginManager pm;
-	protected static PluginDescriptionFile description;
-	protected static MMO mmo;
 	private int updateTask;
-
-	public MMOParty() {
-		classes.add(PartyDB.class);
-	}
+	/**
+	 * Config options
+	 */
+	String config_ui_align = "TOP_LEFT";
+	int config_ui_left = 3;
+	int config_ui_top = 3;
+	int config_max_party_size = 6;
+	boolean config_always_show = true;
+	boolean config_no_party_pvp = true;
+	boolean config_no_party_pvp_quiet = false;
+	boolean config_show_pets = true;
+	boolean config_leave_on_quit = false;
 
 	@Override
 	public void onEnable() {
-		server = getServer();
-		pm = server.getPluginManager();
-		description = getDescription();
-
-		Party.mmo = mmo = MMO.create(this);
+		super.onEnable();
 		MMO.mmoParty = true;
-		mmo.setPluginName("Party");
-		mmo.cfg.getString("ui.default.align", "TOP_LEFT");
-		mmo.cfg.getInt("ui.default.left", 3);
-		mmo.cfg.getInt("ui.default.top", 3);
-
-		mmo.log("loading " + description.getFullName());
-
-		// Default values
-		mmo.cfg.getBoolean("auto_update", true);
-		mmo.cfg.getInt("max_party_size", 6);
-		mmo.cfg.getBoolean("always_show", true);
-		mmo.cfg.getBoolean("no_party_pvp", true);
-		mmo.cfg.getBoolean("no_party_pvp_quiet", false);
-		mmo.cfg.getBoolean("show_pets", true);
-		mmo.cfg.getBoolean("leave_on_quit", false);
-		mmo.cfg.save();
 
 		getDatabase().find(PartyDB.class);//.findRowCount();
 
@@ -88,23 +71,24 @@ public class MMOParty extends MMOPlugin {
 		pm.registerEvent(Type.CUSTOM_EVENT, new mmoSpoutListener(), Priority.Normal, this);
 		pm.registerEvent(Type.CUSTOM_EVENT, new ChannelParty(), Priority.Normal, this);
 
+		Party.plugin = this;
 		Party.load();
 
-		for (Player player : server.getOnlinePlayers()) {
+		for (Player player : getServer().getOnlinePlayers()) {
 			if (Party.find(player) == null) {
 				//ToDo: Catch this Leak
 				new Party(player.getName());
 			}
 			SpoutPlayer splayer = SpoutManager.getPlayer(player);
 			if (splayer.isSpoutCraftEnabled()) {
-				GenericContainer container = mmo.getContainer();
+				GenericContainer container = getContainer();
 				Party.containers.put(player, container);
-				splayer.getMainScreen().attachWidget(mmo.plugin, container);
+				splayer.getMainScreen().attachWidget(this, container);
 				Party.update(player);
 			}
 		}
 
-		updateTask = server.getScheduler().scheduleSyncRepeatingTask(this,
+		updateTask = getServer().getScheduler().scheduleSyncRepeatingTask(this,
 				  new Runnable() {
 
 					  @Override
@@ -115,13 +99,26 @@ public class MMOParty extends MMOPlugin {
 	}
 
 	@Override
+	public void loadConfiguration(Configuration cfg) {
+		config_ui_align = cfg.getString("ui.default.align", config_ui_align);
+		config_ui_left = cfg.getInt("ui.default.left", config_ui_left);
+		config_ui_top = cfg.getInt("ui.default.top", config_ui_top);
+		config_max_party_size = cfg.getInt("max_party_size", config_max_party_size);
+		config_always_show = cfg.getBoolean("always_show", config_always_show);
+		config_no_party_pvp = cfg.getBoolean("no_party_pvp", config_no_party_pvp);
+		config_no_party_pvp_quiet = cfg.getBoolean("no_party_pvp_quiet", config_no_party_pvp_quiet);
+		config_show_pets = cfg.getBoolean("show_pets", config_show_pets);
+		config_leave_on_quit = cfg.getBoolean("leave_on_quit", config_leave_on_quit);
+	}
+
+	@Override
 	public void onDisable() {
-		server.getScheduler().cancelTask(updateTask);
+		getServer().getScheduler().cancelTask(updateTask);
 		Party.save();
 		Party.clear();
-		mmo.log("Disabled " + description.getFullName());
-		mmo.autoUpdate();
+//		mmo.autoUpdate();
 		MMO.mmoParty = false;
+		super.onDisable();
 	}
 
 	@Override
@@ -144,28 +141,28 @@ public class MMOParty extends MMOPlugin {
 				//</editor-fold>
 			} else if (args[0].equalsIgnoreCase("help")) {
 				//<editor-fold defaultstate="collapsed" desc="/party OR /party help">
-				mmo.sendMessage(player, "Party commands:");
-				mmo.sendMessage(player, "/party status");
+				sendMessage(player, "Party commands:");
+				sendMessage(player, "/party status");
 				if (isLeader) {
-					mmo.sendMessage(player, "/party invite <player>");
+					sendMessage(player, "/party invite <player>");
 				}
 				if (!isParty) {
-					mmo.sendMessage(player, "/party accept [<leader>]");
+					sendMessage(player, "/party accept [<leader>]");
 				}
 				if (!isParty) {
-					mmo.sendMessage(player, "/party decline [<leader>]");
+					sendMessage(player, "/party decline [<leader>]");
 				}
 				if (isParty) {
-					mmo.sendMessage(player, "/party leave");
+					sendMessage(player, "/party leave");
 				}
 				if (isParty && isLeader) {
-					mmo.sendMessage(player, "/party promote <player>");
+					sendMessage(player, "/party promote <player>");
 				}
 				if (isParty && isLeader) {
-					mmo.sendMessage(player, "/party kick <player>");
+					sendMessage(player, "/party kick <player>");
 				}
 				if (isParty && MMO.mmoChat) {
-					mmo.sendMessage(player, "/party <message>");
+					sendMessage(player, "/party <message>");
 				}
 				//</editor-fold>
 			} else if (args[0].equalsIgnoreCase("status")) {
@@ -186,7 +183,7 @@ public class MMOParty extends MMOPlugin {
 							first = false;
 						}
 					}
-					mmo.sendMessage(player, output + ".");
+					sendMessage(player, output + ".");
 				} else {
 					party.status(player);
 					party.update();
@@ -200,39 +197,39 @@ public class MMOParty extends MMOPlugin {
 					}
 					party.invite(player, args[1]);
 				} else {
-					mmo.sendMessage(player, "Who do you want to invite?");
+					sendMessage(player, "Who do you want to invite?");
 				}
 				//</editor-fold>
 			} else if (args[0].equalsIgnoreCase("promote")) {
 				//<editor-fold defaultstate="collapsed" desc="/party promote <player>">
 				if (!isParty) {
-					mmo.sendMessage(player, "You are not in a party.");
+					sendMessage(player, "You are not in a party.");
 				} else if (args.length > 1) {
 					party.promote(player, args[1]);
 				} else {
-					mmo.sendMessage(player, "Who do you want to promote?");
+					sendMessage(player, "Who do you want to promote?");
 				}
 				//</editor-fold>
 			} else if (args[0].equalsIgnoreCase("accept")) {
 				//<editor-fold defaultstate="collapsed" desc="/party accept [<leader>]">
 				if (isParty) {
-					mmo.sendMessage(player, "You are already in a party.");
+					sendMessage(player, "You are already in a party.");
 				} else {
 					List<Party> invites = Party.findInvites(player);
 					if (args.length > 1) {
 						party = Party.find(args[1]);
 						if (party == null) {
-							mmo.sendMessage(player, "Unable to find that party.");
+							sendMessage(player, "Unable to find that party.");
 						} else {
 							party.accept(player);
 						}
 					} else {
 						if (invites.isEmpty()) {
-							mmo.sendMessage(player, "No invitations to accept.");
+							sendMessage(player, "No invitations to accept.");
 						} else if (invites.size() == 1) {
 							invites.get(0).accept(player);
 						} else {
-							mmo.sendMessage(player, "Accept which invitation? (/party status for list)");
+							sendMessage(player, "Accept which invitation? (/party status for list)");
 						}
 					}
 				}
@@ -243,24 +240,24 @@ public class MMOParty extends MMOPlugin {
 				if (args.length > 1) {
 					party = Party.find(args[1]);
 					if (party == null) {
-						mmo.sendMessage(player, "Unable to find that party.");
+						sendMessage(player, "Unable to find that party.");
 					} else {
 						party.decline(player);
 					}
 				} else {
 					if (invites.isEmpty()) {
-						mmo.sendMessage(player, "No invitations to decline.");
+						sendMessage(player, "No invitations to decline.");
 					} else if (invites.size() == 1) {
 						invites.get(0).decline(player);
 					} else {
-						mmo.sendMessage(player, "Decline which invitation? (/party status for list)");
+						sendMessage(player, "Decline which invitation? (/party status for list)");
 					}
 				}
 				//</editor-fold>
 			} else if (args[0].equalsIgnoreCase("leave")) {
 				//<editor-fold defaultstate="collapsed" desc="/party leave">
 				if (!isParty) {
-					mmo.sendMessage(player, "You are not in a party.");
+					sendMessage(player, "You are not in a party.");
 				} else {
 					party.leave(player);
 				}
@@ -268,11 +265,11 @@ public class MMOParty extends MMOPlugin {
 			} else if (args[0].equalsIgnoreCase("kick")) {
 				//<editor-fold defaultstate="collapsed" desc="/party kick <player>">
 				if (!isParty) {
-					mmo.sendMessage(player, "You are not in a party.");
+					sendMessage(player, "You are not in a party.");
 				} else if (args.length > 1) {
 					party.kick(player, args[1]);
 				} else {
-					mmo.sendMessage(player, "Who do you want to kick?");
+					sendMessage(player, "Who do you want to kick?");
 				}
 				//</editor-fold>
 			} else {
@@ -293,32 +290,39 @@ public class MMOParty extends MMOPlugin {
 		return false;
 	}
 
-	private static class mmoSpoutListener extends SpoutListener {
+	@Override
+	public List<Class<?>> getDatabaseClasses() {
+		List<Class<?>> list = new ArrayList<Class<?>>();
+		list.add(PartyDB.class);
+		return list;
+	}
+
+	private class mmoSpoutListener extends SpoutListener {
 
 		@Override
 		public void onSpoutCraftEnable(SpoutCraftEnableEvent event) {
 			SpoutPlayer player = SpoutManager.getPlayer(event.getPlayer());
-			GenericContainer container = mmo.getContainer();
+			GenericContainer container = getContainer();
 			Party.containers.put(player, container);
-			player.getMainScreen().attachWidget(mmo.plugin, container);
+			player.getMainScreen().attachWidget(plugin, container);
 			Party.update(player);
 		}
 	}
 
-	private static class mmoPartyEntityListener extends MMOListener {
+	private class mmoPartyEntityListener extends MMOListener {
 
 		@Override
 		public void onMMOPVPDamage(MMODamageEvent event) {
-			if (mmo.cfg.getBoolean("no_party_pvp", true) && Party.isSameParty((Player) event.getAttacker(), (Player) event.getDefender())) {
-				if (mmo.cfg.getBoolean("no_party_pvp_quiet", false)) {
-					mmo.sendMessage((Player) event.getAttacker(), "Can't attack your own party!");
+			if (config_no_party_pvp && Party.isSameParty((Player) event.getAttacker(), (Player) event.getDefender())) {
+				if (config_no_party_pvp_quiet) {
+					plugin.sendMessage((Player) event.getAttacker(), "Can't attack your own party!");
 				}
 				event.setCancelled(true);
 			}
 		}
 	}
 
-	private static class mmoPartyPlayerListener extends PlayerListener {
+	private class mmoPartyPlayerListener extends PlayerListener {
 
 		@Override
 		public void onPlayerJoin(PlayerJoinEvent event) {
@@ -339,7 +343,7 @@ public class MMOParty extends MMOPlugin {
 						output += MMO.name(invite.getLeader());
 						first = false;
 					}
-					mmo.sendMessage(player, output);
+					plugin.sendMessage(player, output);
 				}
 			}
 			Party.update(player);
@@ -351,7 +355,7 @@ public class MMOParty extends MMOPlugin {
 			if (party != null) {
 				if (!party.isParty() && !party.hasInvites()) {
 					Party.delete(party);
-				} else if (mmo.cfg.getBoolean("leave_on_quit", false)) {
+				} else if (config_leave_on_quit) {
 					party.leave(player);
 				} else {
 					party.update();

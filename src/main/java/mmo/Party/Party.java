@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import mmo.Core.GenericLivingEntity;
 import org.bukkit.ChatColor;
-import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -38,8 +37,7 @@ import org.getspout.spoutapi.gui.Widget;
 
 public class Party {
 
-	protected static MMO mmo;
-	private static Server server;
+	protected static MMOParty plugin;
 	/**
 	 * All the active parties, use "party.remove()" where needed.
 	 */
@@ -90,7 +88,6 @@ public class Party {
 	 * @param invites The player names to invite
 	 */
 	public Party(String leader, String names, String invite) {
-		server = MMO.server;
 		parties.add(this); // Make sure we can store the new party
 		this.leader = leader;
 		if (!names.equals("")) {
@@ -111,8 +108,8 @@ public class Party {
 //			new Party(leader, cfg.getString(leader + ".members", ""), cfg.getString(leader + ".invites", ""));
 //		}
 		try {
-//			mmo.log("Loading: " + mmo.plugin.getDatabase().find(PartyDB.class).setAutofetch(true).findList());
-			for (PartyDB row : mmo.plugin.getDatabase().find(PartyDB.class).setAutofetch(true).findList()) {
+//			plugin.log("Loading: " + plugin.getDatabase().find(PartyDB.class).setAutofetch(true).findList());
+			for (PartyDB row : plugin.getDatabase().find(PartyDB.class).setAutofetch(true).findList()) {
 				new Party(row.getLeader(), row.getMembers(), row.getInvites());
 			}
 		} catch (Exception e) {
@@ -124,7 +121,7 @@ public class Party {
 	 */
 	protected static void save() {
 		for (Party party : parties) {
-			PartyDB row = mmo.plugin.getDatabase().find(PartyDB.class).where().ieq("leader", party.leader).findUnique();
+			PartyDB row = plugin.getDatabase().find(PartyDB.class).where().ieq("leader", party.leader).findUnique();
 			if (party.isParty() || !party.invites.isEmpty()) {
 				if (row == null) {
 					row = new PartyDB();
@@ -132,9 +129,9 @@ public class Party {
 				}
 				row.setMembers(party.getMemberNames());
 				row.setInvites(party.getInviteNames());
-				mmo.plugin.getDatabase().save(row);
+				plugin.getDatabase().save(row);
 			} else if (row != null) {
-				mmo.plugin.getDatabase().delete(row);
+				plugin.getDatabase().delete(row);
 			}
 		}
 	}
@@ -242,7 +239,7 @@ public class Party {
 	 * @return A list of all online players
 	 */
 	public List<Player> getMembers(String name) {
-		return getMembers(server.getPlayer(name));
+		return getMembers(plugin.getServer().getPlayer(name));
 	}
 
 	/**
@@ -265,7 +262,7 @@ public class Party {
 	public List<Player> getMembers() {
 		ArrayList<Player> players = new ArrayList<Player>();
 		for (String name : members) {
-			Player player = server.getPlayer(name);
+			Player player = plugin.getServer().getPlayer(name);
 			if (player != null && player.isOnline()) {
 				players.add(player);
 			}
@@ -320,16 +317,16 @@ public class Party {
 		}
 		Party party = Party.find(player);
 		if (party != null && party.isParty()) {
-			mmo.sendMessage(player, "You are already in a party.");
+			plugin.sendMessage(player, "You are already in a party.");
 			return false;
 		}
 		if (!invites.contains(player.getName())) {
-			mmo.sendMessage(player, "You haven't been invited.");
+			plugin.sendMessage(player, "You haven't been invited.");
 			return false;
 		}
 		invites.remove(invites.indexOf(player.getName()));
-		if (members.size() >= mmo.cfg.getInt("max_party_size", 6)) {
-			mmo.sendMessage(player, "There isn't any space for you.");
+		if (members.size() >= plugin.config_max_party_size) {
+			plugin.sendMessage(player, "There isn't any space for you.");
 			return false;
 		}
 		declineInvites(player); // Make sure they have no outstanding invites from anywhere else
@@ -337,10 +334,10 @@ public class Party {
 			Party.delete(party);
 		}
 		// Note the order - send to everyone in the party so the new member gets a custom msg
-		mmo.sendMessage(getMembers(), "%s has joined the party.", MMO.name(player.getName()));
-		mmo.notify(getMembers(), "%s joined", MMO.name(player.getName()));
-		mmo.sendMessage(player, "You have joined a party.");
-		mmo.notify(player, "Joined %s", MMO.name(leader));
+		plugin.sendMessage(getMembers(), "%s has joined the party.", MMO.name(player.getName()));
+		plugin.notify(getMembers(), "%s joined", MMO.name(player.getName()));
+		plugin.sendMessage(player, "You have joined a party.");
+		plugin.notify(player, "Joined %s", MMO.name(leader));
 		members.add(player.getName());
 		update();
 		Party.save();
@@ -355,7 +352,7 @@ public class Party {
 	public boolean decline(Player player) {
 		if (player != null && invites.contains(player.getName())) {
 			invites.remove(invites.indexOf(player.getName()));
-			mmo.sendMessage(player, "Declined invitation from %s.", MMO.name(leader));
+			plugin.sendMessage(player, "Declined invitation from %s.", MMO.name(leader));
 			Party.save();
 			return true;
 		}
@@ -393,26 +390,26 @@ public class Party {
 	 */
 	public boolean promote(Player leader, String name) {
 		if (!isLeader(leader)) {
-			mmo.sendMessage(leader, "You are not the party leader.");
+			plugin.sendMessage(leader, "You are not the party leader.");
 			return false;
 		}
 		if (!isParty()) {
-			mmo.sendMessage(leader, "You are not in a party.");
+			plugin.sendMessage(leader, "You are not in a party.");
 			return false;
 		}
 		if (!members.contains(name)) {
-			mmo.sendMessage(leader, "%s is not in your party.", MMO.name(name));
+			plugin.sendMessage(leader, "%s is not in your party.", MMO.name(name));
 			return false;
 		}
 		if (isLeader(name)) {
-			mmo.sendMessage(leader, "You are already the party leader.");
+			plugin.sendMessage(leader, "You are already the party leader.");
 			return false;
 		}
 		this.leader = members.get(name);
-		mmo.notify(name, "Promoted to leader");
-		mmo.notify(getMembers(name), "%s promoted", MMO.name(this.leader));
-		mmo.sendMessage(leader, "Promoted %s to leader.", MMO.name(this.leader));
-		mmo.sendMessage(name, "You have been promoted to leader.");
+		plugin.notify(name, "Promoted to leader");
+		plugin.notify(getMembers(name), "%s promoted", MMO.name(this.leader));
+		plugin.sendMessage(leader, "Promoted %s to leader.", MMO.name(this.leader));
+		plugin.sendMessage(name, "You have been promoted to leader.");
 		update();
 		Party.save();
 		return true;
@@ -425,14 +422,14 @@ public class Party {
 	 */
 	public boolean leave(Player player) {
 		if (remove(player.getName())) {
-			mmo.sendMessage(player, "You have left your party.");
-			mmo.sendMessage(getMembers(), "%s has left the party.", MMO.name(player.getName()));
-			mmo.notify(getMembers(), "%s left", MMO.name(player.getName()));
+			plugin.sendMessage(player, "You have left your party.");
+			plugin.sendMessage(getMembers(), "%s has left the party.", MMO.name(player.getName()));
+			plugin.notify(getMembers(), "%s left", MMO.name(player.getName()));
 			if (isLeader(player)) {
 				leader = members.get(0);
-				mmo.sendMessage(leader, "You are now the party leader");
-				mmo.notify(leader, "Promoted to leader");
-				mmo.notify(getMembers(leader), "%s is now leader", MMO.name(leader));
+				plugin.sendMessage(leader, "You are now the party leader");
+				plugin.notify(leader, "Promoted to leader");
+				plugin.notify(getMembers(leader), "%s is now leader", MMO.name(leader));
 			}
 			return true;
 		}
@@ -447,25 +444,25 @@ public class Party {
 	 */
 	public boolean kick(Player leader, String name) {
 		if (!isLeader(leader)) {
-			mmo.sendMessage(leader, "You are not the party leader.");
+			plugin.sendMessage(leader, "You are not the party leader.");
 			return false;
 		}
 		if (isLeader(name)) {
-			mmo.sendMessage(leader, "You cannot kick yourself.");
+			plugin.sendMessage(leader, "You cannot kick yourself.");
 			return false;
 		}
 		if (!members.contains(name)) {
-			mmo.sendMessage(leader, "%s is not in your party.", MMO.name(name));
+			plugin.sendMessage(leader, "%s is not in your party.", MMO.name(name));
 			return false;
 		}
 		name = members.get(name);
 		if (!remove(name)) {
-			mmo.sendMessage(leader, "Unable to remove them...");
+			plugin.sendMessage(leader, "Unable to remove them...");
 			return false;
 		}
-		mmo.sendMessage(getMembers(), "%s has been kicked out of the party.", MMO.name(name));
-		mmo.sendMessage(name, "You have been kicked from the party.");
-		mmo.notify(getMembers(), "%s kicked", MMO.name(name));
+		plugin.sendMessage(getMembers(), "%s has been kicked out of the party.", MMO.name(name));
+		plugin.sendMessage(name, "You have been kicked from the party.");
+		plugin.notify(getMembers(), "%s kicked", MMO.name(name));
 		return true;
 	}
 
@@ -515,39 +512,39 @@ public class Party {
 	 */
 	public boolean invite(Player leader, String name) {
 		if (!isLeader(leader)) {
-			mmo.sendMessage(leader, "You are not the party leader.");
+			plugin.sendMessage(leader, "You are not the party leader.");
 			return false;
 		}
-		Player player = server.getPlayer(name);
+		Player player = plugin.getServer().getPlayer(name);
 		if (player == null) {
-			mmo.sendMessage(leader, "%s isn't online, is it spelt correctly?", MMO.name(name));
+			plugin.sendMessage(leader, "%s isn't online, is it spelt correctly?", MMO.name(name));
 			return false;
 		}
 		if (player.equals(leader)) {
-			mmo.sendMessage(leader, "You cannot invite yourself.");
+			plugin.sendMessage(leader, "You cannot invite yourself.");
 			return false;
 		}
-		if (members.size() >= mmo.cfg.getInt("max_party_size", 6)) {
-			mmo.sendMessage(leader, "You don't have space in your party.");
+		if (members.size() >= plugin.config_max_party_size) {
+			plugin.sendMessage(leader, "You don't have space in your party.");
 			return false;
 		}
 		Party party = find(player);
 		if (party != null && party.size() > 1) {
 			if (this == party) {
-				mmo.sendMessage(leader, "They are already in your party.");
+				plugin.sendMessage(leader, "They are already in your party.");
 			} else {
-				mmo.sendMessage(leader, "They are already in a party.");
+				plugin.sendMessage(leader, "They are already in a party.");
 			}
 			return false;
 		}
 		if (invites.contains(player.getName())) {
-			mmo.sendMessage(leader, "They have already been invited.");
+			plugin.sendMessage(leader, "They have already been invited.");
 			return false;
 		}
 		invites.add(player.getName());
-		mmo.sendMessage(player, "You have been invited to a join party by %s\nTo accept type: /party accept %s", MMO.name(this.leader), this.leader);
-		mmo.sendMessage(leader, "You have invited %s", MMO.name(player.getName()));
-		mmo.notify(player, "Invite from %s", MMO.name(leader.getName()));
+		plugin.sendMessage(player, "You have been invited to a join party by %s\nTo accept type: /party accept %s", MMO.name(this.leader), this.leader);
+		plugin.sendMessage(leader, "You have invited %s", MMO.name(player.getName()));
+		plugin.notify(player, "Invite from %s", MMO.name(leader.getName()));
 		Party.save();
 		return true;
 	}
@@ -556,7 +553,7 @@ public class Party {
 	 * Update all party members in Player's party.
 	 */
 	public static void update(String name) {
-		update(server.getPlayer(name));
+		update(plugin.getServer().getPlayer(name));
 	}
 
 	/**
@@ -586,9 +583,7 @@ public class Party {
 	 * Update all party members.
 	 */
 	public void update() {
-		if (MMO.hasSpout && members.size() > 1 || mmo.cfg.getBoolean("always_show", true)) {
-			boolean show_pets = mmo.cfg.getBoolean("show_pets", true);
-
+		if (plugin.hasSpout && members.size() > 1 || plugin.config_always_show) {
 			for (Player player : getMembers()) {
 				Container container = containers.get(player);
 
@@ -603,7 +598,7 @@ public class Party {
 							bar = (GenericLivingEntity) bars[index];
 						}
 						bar.setEntity(name, isLeader(name) ? ChatColor.GREEN + "@" : "");
-						bar.setTargets(show_pets ? MMO.getPets(server.getPlayer(name)) : null);
+						bar.setTargets(plugin.config_show_pets ? MMO.getPets(plugin.getServer().getPlayer(name)) : null);
 						index++;
 					}
 					while (index < bars.length) {
@@ -624,8 +619,8 @@ public class Party {
 		Map<String, Tameable> pets = new HashMap<String, Tameable>();
 		String output = "";
 
-		if (mmo.cfg.getBoolean("show_pets", true)) {
-			for (World world : server.getWorlds()) {
+		if (plugin.config_show_pets) {
+			for (World world : plugin.getServer().getWorlds()) {
 				for (LivingEntity entity : world.getLivingEntities()) {
 					if (entity instanceof Tameable && ((Tameable) entity).isTamed() && ((Tameable) entity).getOwner() instanceof Player) {
 						String name = ((Player) ((Tameable) entity).getOwner()).getName();
@@ -637,7 +632,7 @@ public class Party {
 			}
 		}
 		for (String member : members) {
-			Player player = server.getPlayer(member);
+			Player player = plugin.getServer().getPlayer(member);
 			if (player == null) {
 				output = MMO.makeBar(ChatColor.BLACK, 0) + MMO.makeBar(ChatColor.BLACK, 0) + ChatColor.DARK_GRAY + member;
 			} else {
@@ -671,8 +666,8 @@ public class Party {
 					output += status.get(tmp);
 				}
 			}
-			mmo.sendMessage(player, "Status:");
-			mmo.sendMessage(player, output);
+			plugin.sendMessage(player, "Status:");
+			plugin.sendMessage(player, output);
 		}
 	}
 }
