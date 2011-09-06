@@ -17,6 +17,7 @@
 package mmo.Party;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import mmo.Chat.Chat;
 import mmo.Core.MMO;
@@ -56,11 +57,17 @@ public class MMOParty extends MMOPlugin {
 	boolean config_leave_on_quit = false;
 
 	@Override
+	public BitSet mmoSupport(BitSet support) {
+		support.set(MMO_PLAYER);
+		return support;
+	}
+
+	@Override
 	public void onEnable() {
 		super.onEnable();
 		MMO.mmoParty = true;
 
-		getDatabase().find(PartyDB.class);//.findRowCount();
+//		getDatabase().find(PartyDB.class);//.findRowCount();
 
 		mmoPartyPlayerListener ppl = new mmoPartyPlayerListener();
 		pm.registerEvent(Type.PLAYER_JOIN, ppl, Priority.Monitor, this);
@@ -68,7 +75,6 @@ public class MMOParty extends MMOPlugin {
 		pm.registerEvent(Type.PLAYER_KICK, ppl, Priority.Monitor, this);
 
 		pm.registerEvent(Type.CUSTOM_EVENT, new mmoPartyEntityListener(), Priority.Highest, this);
-		pm.registerEvent(Type.CUSTOM_EVENT, new mmoSpoutListener(), Priority.Normal, this);
 		pm.registerEvent(Type.CUSTOM_EVENT, new ChannelParty(), Priority.Normal, this);
 
 		Party.plugin = this;
@@ -78,13 +84,6 @@ public class MMOParty extends MMOPlugin {
 			if (Party.find(player) == null) {
 				//ToDo: Catch this Leak
 				new Party(player.getName());
-			}
-			SpoutPlayer splayer = SpoutManager.getPlayer(player);
-			if (splayer.isSpoutCraftEnabled()) {
-				GenericContainer container = getContainer();
-				Party.containers.put(player, container);
-				splayer.getMainScreen().attachWidget(this, container);
-				Party.update(player);
 			}
 		}
 
@@ -297,16 +296,12 @@ public class MMOParty extends MMOPlugin {
 		return list;
 	}
 
-	private class mmoSpoutListener extends SpoutListener {
-
-		@Override
-		public void onSpoutCraftEnable(SpoutCraftEnableEvent event) {
-			SpoutPlayer player = SpoutManager.getPlayer(event.getPlayer());
-			GenericContainer container = getContainer();
-			Party.containers.put(player, container);
-			player.getMainScreen().attachWidget(plugin, container);
-			Party.update(player);
-		}
+	@Override
+	public void onSpoutCraftPlayer(SpoutPlayer player) {
+		GenericContainer container = getContainer(config_ui_align, config_ui_left, config_ui_top);
+		Party.containers.put(player, container);
+		player.getMainScreen().attachWidget(this, container);
+		Party.update(player);
 	}
 
 	private class mmoPartyEntityListener extends MMOListener {
