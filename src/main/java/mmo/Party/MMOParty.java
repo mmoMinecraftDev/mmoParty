@@ -34,9 +34,8 @@ import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.util.config.Configuration;
-import org.getspout.spoutapi.SpoutManager;
-import org.getspout.spoutapi.event.spout.SpoutCraftEnableEvent;
-import org.getspout.spoutapi.event.spout.SpoutListener;
+import org.getspout.spoutapi.gui.Container;
+import org.getspout.spoutapi.gui.ContainerType;
 import org.getspout.spoutapi.gui.GenericContainer;
 import org.getspout.spoutapi.player.SpoutPlayer;
 
@@ -49,6 +48,7 @@ public class MMOParty extends MMOPlugin {
 	String config_ui_align = "TOP_LEFT";
 	int config_ui_left = 3;
 	int config_ui_top = 3;
+	int config_ui_maxwidth = 160;
 	int config_max_party_size = 6;
 	boolean config_always_show = true;
 	boolean config_no_party_pvp = true;
@@ -102,6 +102,7 @@ public class MMOParty extends MMOPlugin {
 		config_ui_align = cfg.getString("ui.default.align", config_ui_align);
 		config_ui_left = cfg.getInt("ui.default.left", config_ui_left);
 		config_ui_top = cfg.getInt("ui.default.top", config_ui_top);
+		config_ui_maxwidth = cfg.getInt("ui.default.width", config_ui_maxwidth);
 		config_max_party_size = cfg.getInt("max_party_size", config_max_party_size);
 		config_always_show = cfg.getBoolean("always_show", config_always_show);
 		config_no_party_pvp = cfg.getBoolean("no_party_pvp", config_no_party_pvp);
@@ -115,7 +116,6 @@ public class MMOParty extends MMOPlugin {
 		getServer().getScheduler().cancelTask(updateTask);
 		Party.save();
 		Party.clear();
-//		mmo.autoUpdate();
 		MMO.mmoParty = false;
 		super.onDisable();
 	}
@@ -298,8 +298,10 @@ public class MMOParty extends MMOPlugin {
 
 	@Override
 	public void onSpoutCraftPlayer(SpoutPlayer player) {
-		GenericContainer container = getContainer(config_ui_align, config_ui_left, config_ui_top);
-		Party.containers.put(player, container);
+		Container container = getContainer(config_ui_align, config_ui_left, config_ui_top);
+		Container members = new GenericContainer();
+		container.setLayout(ContainerType.HORIZONTAL).addChildren(members, new GenericContainer()).setWidth(config_ui_maxwidth);
+		Party.containers.put(player, members);
 		player.getMainScreen().attachWidget(this, container);
 		Party.update(player);
 	}

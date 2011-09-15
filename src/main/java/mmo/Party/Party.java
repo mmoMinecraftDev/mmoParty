@@ -57,7 +57,7 @@ public class Party {
 	/**
 	 * A map of player containers, each container is their party bar
 	 */
-	protected static HashMap<Player, GenericContainer> containers = new HashMap<Player, GenericContainer>();
+	protected static HashMap<Player, Container> containers = new HashMap<Player, Container>();
 
 	/**
 	 * Constructor.
