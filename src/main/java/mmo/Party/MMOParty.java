@@ -298,11 +298,10 @@ public class MMOParty extends MMOPlugin {
 
 	@Override
 	public void onSpoutCraftPlayer(SpoutPlayer player) {
-		Container container = getContainer(config_ui_align, config_ui_left, config_ui_top);
+		Container container = getContainer(player, config_ui_align, config_ui_left, config_ui_top);
 		Container members = new GenericContainer();
 		container.setLayout(ContainerType.HORIZONTAL).addChildren(members, new GenericContainer()).setWidth(config_ui_maxwidth);
 		Party.containers.put(player, members);
-		player.getMainScreen().attachWidget(this, container);
 		Party.update(player);
 	}
 

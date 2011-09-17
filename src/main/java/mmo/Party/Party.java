@@ -32,7 +32,6 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
 import org.getspout.spoutapi.gui.Container;
-import org.getspout.spoutapi.gui.GenericContainer;
 import org.getspout.spoutapi.gui.Widget;
 
 public class Party {
