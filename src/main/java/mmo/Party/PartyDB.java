@@ -22,7 +22,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-@Entity()
+@Entity
 @Table(name = "mmo_Party")
 public class PartyDB {
 
@@ -32,10 +32,16 @@ public class PartyDB {
 	private String leader;
 
 	@NotNull
-	private String members;
+	private String members = "";
 
 	@NotNull
-	private String invites;
+	private String invites = "";
+
+	public PartyDB() {}
+
+	public PartyDB(String leader) {
+		this.leader = leader;
+	}
 
 	public String getLeader() {
 		return leader;

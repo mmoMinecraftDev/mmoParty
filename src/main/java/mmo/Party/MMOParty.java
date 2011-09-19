@@ -59,6 +59,7 @@ public class MMOParty extends MMOPlugin {
 	@Override
 	public BitSet mmoSupport(BitSet support) {
 		support.set(MMO_PLAYER);
+		support.set(MMO_DATABASE);
 		return support;
 	}
 
@@ -66,8 +67,6 @@ public class MMOParty extends MMOPlugin {
 	public void onEnable() {
 		super.onEnable();
 		MMO.mmoParty = true;
-
-//		getDatabase().find(PartyDB.class);//.findRowCount();
 
 		mmoPartyPlayerListener ppl = new mmoPartyPlayerListener();
 		pm.registerEvent(Type.PLAYER_JOIN, ppl, Priority.Monitor, this);
