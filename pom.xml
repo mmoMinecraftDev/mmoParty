@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	<modelVersion>4.0.0</modelVersion>
 
 	<!-- Project information -->
-	<groupId>mmo.Core.MMOParty</groupId>
+	<groupId>mmo.Party.MMOParty</groupId>
 	<artifactId>mmoParty</artifactId>
 	<name>mmoParty</name>
 	<version>dev</version>
@@ -45,6 +45,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		<connection>scm:git:git://github.com/mmoMinecraftDev/${project.name}.git</connection>
 		<url>https://github.com/mmoMinecraftDev/${project.name}</url>
 	</scm>
+
+    <!-- Continuous integration -->
+	<ciManagement>
+		<system>jenkins</system>
+		<url>http://ci.mmo.me.uk</url>
+	</ciManagement>
 
 	<!-- Repository locations -->
 	<repositories>
