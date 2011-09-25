@@ -18,11 +18,11 @@ package mmo.Party;
 
 import java.util.HashSet;
 
-import mmo.Core.events.MMOChatEvent;
+import mmo.ChatAPI.MMOChatEvent;
 import mmo.Core.MMOListener;
 import org.bukkit.entity.Player;
 
-public class ChannelParty extends MMOListener {
+public class PartyChannel extends MMOListener {
 
 	@Override
 	public void onMMOChat(MMOChatEvent event) {

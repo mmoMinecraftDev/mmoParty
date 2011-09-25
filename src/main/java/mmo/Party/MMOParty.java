@@ -19,10 +19,8 @@ package mmo.Party;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
-import mmo.Chat.Chat;
+import mmo.ChatAPI.Chat;
 import mmo.Core.MMO;
-import mmo.Core.MMOListener;
-import mmo.Core.events.MMODamageEvent;
 import mmo.Core.MMOPlugin;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -45,16 +43,16 @@ public class MMOParty extends MMOPlugin {
 	/**
 	 * Config options
 	 */
-	String config_ui_align = "TOP_LEFT";
-	int config_ui_left = 3;
-	int config_ui_top = 3;
-	int config_ui_maxwidth = 160;
-	int config_max_party_size = 6;
-	boolean config_always_show = true;
-	boolean config_no_party_pvp = true;
-	boolean config_no_party_pvp_quiet = false;
-	boolean config_show_pets = true;
-	boolean config_leave_on_quit = false;
+	static String config_ui_align = "TOP_LEFT";
+	static int config_ui_left = 3;
+	static int config_ui_top = 3;
+	static int config_ui_maxwidth = 160;
+	static int config_max_party_size = 6;
+	static boolean config_always_show = true;
+	static boolean config_no_party_pvp = true;
+	static boolean config_no_party_pvp_quiet = false;
+	static boolean config_show_pets = true;
+	static boolean config_leave_on_quit = false;
 
 	@Override
 	public BitSet mmoSupport(BitSet support) {
@@ -66,15 +64,14 @@ public class MMOParty extends MMOPlugin {
 	@Override
 	public void onEnable() {
 		super.onEnable();
-		MMO.mmoParty = true;
 
 		mmoPartyPlayerListener ppl = new mmoPartyPlayerListener();
 		pm.registerEvent(Type.PLAYER_JOIN, ppl, Priority.Monitor, this);
 		pm.registerEvent(Type.PLAYER_QUIT, ppl, Priority.Monitor, this);
 		pm.registerEvent(Type.PLAYER_KICK, ppl, Priority.Monitor, this);
 
-		pm.registerEvent(Type.CUSTOM_EVENT, new mmoPartyEntityListener(), Priority.Highest, this);
-		pm.registerEvent(Type.CUSTOM_EVENT, new ChannelParty(), Priority.Normal, this);
+		pm.registerEvent(Type.CUSTOM_EVENT, new PartyDamage(this), Priority.Highest, this);
+		pm.registerEvent(Type.CUSTOM_EVENT, new PartyChannel(), Priority.Normal, this);
 
 		Party.plugin = this;
 		Party.load();
@@ -115,7 +112,6 @@ public class MMOParty extends MMOPlugin {
 		getServer().getScheduler().cancelTask(updateTask);
 		Party.save();
 		Party.clear();
-		MMO.mmoParty = false;
 		super.onDisable();
 	}
 
@@ -131,7 +127,7 @@ public class MMOParty extends MMOPlugin {
 			boolean isLeader = party == null ? true : party.isLeader(player);
 			if (args.length == 0) {
 				//<editor-fold defaultstate="collapsed" desc="/party">
-				if (MMO.mmoChat) {
+				if (MMO.mmoChatAPI) {
 					Chat.doChat("Party", player, "");
 				} else {
 					return false;
@@ -159,7 +155,7 @@ public class MMOParty extends MMOPlugin {
 				if (isParty && isLeader) {
 					sendMessage(player, "/party kick <player>");
 				}
-				if (isParty && MMO.mmoChat) {
+				if (isParty && MMO.mmoChatAPI) {
 					sendMessage(player, "/party <message>");
 				}
 				//</editor-fold>
@@ -272,7 +268,7 @@ public class MMOParty extends MMOPlugin {
 				//</editor-fold>
 			} else {
 				//<editor-fold defaultstate="collapsed" desc="/party <message>">
-				if (MMO.mmoChat) {
+				if (MMO.mmoChatAPI) {
 					String output = "";
 					for (String word : args) {
 						output += word + " ";
@@ -302,19 +298,6 @@ public class MMOParty extends MMOPlugin {
 		container.setLayout(ContainerType.HORIZONTAL).addChildren(members, new GenericContainer()).setWidth(config_ui_maxwidth);
 		Party.containers.put(player, members);
 		Party.update(player);
-	}
-
-	private class mmoPartyEntityListener extends MMOListener {
-
-		@Override
-		public void onMMOPVPDamage(MMODamageEvent event) {
-			if (config_no_party_pvp && Party.isSameParty((Player) event.getAttacker(), (Player) event.getDefender())) {
-				if (config_no_party_pvp_quiet) {
-					plugin.sendMessage((Player) event.getAttacker(), "Can't attack your own party!");
-				}
-				event.setCancelled(true);
-			}
-		}
 	}
 
 	private class mmoPartyPlayerListener extends PlayerListener {

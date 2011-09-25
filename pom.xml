@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	<modelVersion>4.0.0</modelVersion>
 
 	<!-- Project information -->
-	<groupId>mmo.Party.MMOParty</groupId>
+	<groupId>mmo.Party</groupId>
 	<artifactId>mmoParty</artifactId>
 	<name>mmoParty</name>
 	<version>dev</version>
@@ -96,14 +96,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>mmo.Core.MMOCore</groupId>
+			<groupId>mmo.Core</groupId>
 			<artifactId>mmoCore</artifactId>
 			<version>dev</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>mmo.Core.MMOChat</groupId>
-			<artifactId>mmoChat</artifactId>
+			<groupId>mmo.ChatAPI</groupId>
+			<artifactId>mmoChatAPI</artifactId>
+			<version>dev</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>mmo.DamageAPI</groupId>
+			<artifactId>mmoDamageAPI</artifactId>
 			<version>dev</version>
 			<scope>provided</scope>
 		</dependency>
