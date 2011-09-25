@@ -16,7 +16,7 @@
  */
 package mmo.Party;
 
-import mmo.Core.MMOListener;
+import mmo.CoreAPI.MMOListener;
 import mmo.DamageAPI.MMODamageEvent;
 import org.bukkit.entity.Player;
 

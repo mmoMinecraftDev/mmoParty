@@ -19,9 +19,10 @@ package mmo.Party;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
-import mmo.ChatAPI.Chat;
+import mmo.Chat.Chat;
 import mmo.Core.MMO;
 import mmo.Core.MMOPlugin;
+import mmo.CoreAPI.MMOListener;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -127,7 +128,7 @@ public class MMOParty extends MMOPlugin {
 			boolean isLeader = party == null ? true : party.isLeader(player);
 			if (args.length == 0) {
 				//<editor-fold defaultstate="collapsed" desc="/party">
-				if (MMO.mmoChatAPI) {
+				if (MMOListener.mmoChatAPI) {
 					Chat.doChat("Party", player, "");
 				} else {
 					return false;
@@ -155,7 +156,7 @@ public class MMOParty extends MMOPlugin {
 				if (isParty && isLeader) {
 					sendMessage(player, "/party kick <player>");
 				}
-				if (isParty && MMO.mmoChatAPI) {
+				if (isParty && MMOListener.mmoChatAPI) {
 					sendMessage(player, "/party <message>");
 				}
 				//</editor-fold>
@@ -268,7 +269,7 @@ public class MMOParty extends MMOPlugin {
 				//</editor-fold>
 			} else {
 				//<editor-fold defaultstate="collapsed" desc="/party <message>">
-				if (MMO.mmoChatAPI) {
+				if (MMOListener.mmoChatAPI) {
 					String output = "";
 					for (String word : args) {
 						output += word + " ";
