@@ -28,10 +28,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.Type;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerKickEvent;
-import org.bukkit.event.player.PlayerListener;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.util.config.Configuration;
 import org.getspout.spoutapi.gui.Container;
 import org.getspout.spoutapi.gui.ContainerType;
@@ -66,11 +62,6 @@ public class MMOParty extends MMOPlugin {
 	public void onEnable() {
 		super.onEnable();
 
-		mmoPartyPlayerListener ppl = new mmoPartyPlayerListener();
-		pm.registerEvent(Type.PLAYER_JOIN, ppl, Priority.Monitor, this);
-		pm.registerEvent(Type.PLAYER_QUIT, ppl, Priority.Monitor, this);
-		pm.registerEvent(Type.PLAYER_KICK, ppl, Priority.Monitor, this);
-
 		pm.registerEvent(Type.CUSTOM_EVENT, new PartyDamage(this), Priority.Highest, this);
 		pm.registerEvent(Type.CUSTOM_EVENT, new PartyChannel(), Priority.Normal, this);
 
@@ -85,13 +76,13 @@ public class MMOParty extends MMOPlugin {
 		}
 
 		updateTask = getServer().getScheduler().scheduleSyncRepeatingTask(this,
-				  new Runnable() {
+				new Runnable() {
 
-					  @Override
-					  public void run() {
-						  Party.updateAll();
-					  }
-				  }, 20, 20);
+					@Override
+					public void run() {
+						Party.updateAll();
+					}
+				}, 20, 20);
 	}
 
 	@Override
@@ -293,63 +284,50 @@ public class MMOParty extends MMOPlugin {
 	}
 
 	@Override
+	public void onPlayerJoin(Player player) {
+		Party party = Party.find(player);
+		if (party == null) {
+			//ToDo: Catch this Leak
+			new Party(player.getName());
+		} else {
+			List<Party> invites = Party.findInvites(player);
+			if (!invites.isEmpty()) {
+				String output = "Invitations from: ";
+				boolean first = true;
+				for (Party invite : invites) {
+					if (!first) {
+						output += ", ";
+					}
+					output += MMO.name(invite.getLeader());
+					first = false;
+				}
+				plugin.sendMessage(player, output);
+			}
+		}
+		Party.update(player);
+	}
+
+	@Override
+	public void onPlayerQuit(Player player) {
+		Party.containers.remove(player);
+		Party party = Party.find(player);
+		if (party != null) {
+			if (!party.isParty() && !party.hasInvites()) {
+				Party.delete(party);
+			} else if (config_leave_on_quit) {
+				party.leave(player);
+			} else {
+				party.update();
+			}
+		}
+	}
+
+	@Override
 	public void onSpoutCraftPlayer(SpoutPlayer player) {
 		Container container = getContainer(player, config_ui_align, config_ui_left, config_ui_top);
 		Container members = new GenericContainer();
 		container.setLayout(ContainerType.HORIZONTAL).addChildren(members, new GenericContainer()).setWidth(config_ui_maxwidth);
 		Party.containers.put(player, members);
 		Party.update(player);
-	}
-
-	private class mmoPartyPlayerListener extends PlayerListener {
-
-		@Override
-		public void onPlayerJoin(PlayerJoinEvent event) {
-			Player player = event.getPlayer();
-			Party party = Party.find(player);
-			if (party == null) {
-				//ToDo: Catch this Leak
-				new Party(player.getName());
-			} else {
-				List<Party> invites = Party.findInvites(player);
-				if (!invites.isEmpty()) {
-					String output = "Invitations from: ";
-					boolean first = true;
-					for (Party invite : invites) {
-						if (!first) {
-							output += ", ";
-						}
-						output += MMO.name(invite.getLeader());
-						first = false;
-					}
-					plugin.sendMessage(player, output);
-				}
-			}
-			Party.update(player);
-		}
-
-		public void PlayerQuit(Player player) {
-			Party.containers.remove(player);
-			Party party = Party.find(player);
-			if (party != null) {
-				if (!party.isParty() && !party.hasInvites()) {
-					Party.delete(party);
-				} else if (config_leave_on_quit) {
-					party.leave(player);
-				} else {
-					party.update();
-				}
-			}
-		}
-
-		@Override
-		public void onPlayerQuit(PlayerQuitEvent event) {
-			PlayerQuit(event.getPlayer());
-		}
-
-		@Override
-		public void onPlayerKick(PlayerKickEvent event) {
-			PlayerQuit(event.getPlayer());
-		}
 	}
 }

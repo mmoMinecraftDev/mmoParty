@@ -324,7 +324,7 @@ public class Party {
 			return false;
 		}
 		invites.remove(invites.indexOf(player.getName()));
-		if (members.size() >= plugin.config_max_party_size) {
+		if (members.size() >= MMOParty.config_max_party_size) {
 			plugin.sendMessage(player, "There isn't any space for you.");
 			return false;
 		}
@@ -523,7 +523,7 @@ public class Party {
 			plugin.sendMessage(leader, "You cannot invite yourself.");
 			return false;
 		}
-		if (members.size() >= plugin.config_max_party_size) {
+		if (members.size() >= MMOParty.config_max_party_size) {
 			plugin.sendMessage(leader, "You don't have space in your party.");
 			return false;
 		}
@@ -582,7 +582,7 @@ public class Party {
 	 * Update all party members.
 	 */
 	public void update() {
-		if (plugin.hasSpout && members.size() > 1 || plugin.config_always_show) {
+		if (MMOParty.hasSpout && members.size() > 1 || MMOParty.config_always_show) {
 			for (Player player : getMembers()) {
 				Container container = containers.get(player);
 
@@ -597,7 +597,7 @@ public class Party {
 							bar = (GenericLivingEntity) bars[index];
 						}
 						bar.setEntity(name, isLeader(name) ? ChatColor.GREEN + "@" : "");
-						bar.setTargets(plugin.config_show_pets ? MMO.getPets(plugin.getServer().getPlayer(name)) : null);
+						bar.setTargets(MMOParty.config_show_pets ? MMO.getPets(plugin.getServer().getPlayer(name)) : null);
 						index++;
 					}
 					while (index < bars.length) {
@@ -618,7 +618,7 @@ public class Party {
 		Map<String, Tameable> pets = new HashMap<String, Tameable>();
 		String output = "";
 
-		if (plugin.config_show_pets) {
+		if (MMOParty.config_show_pets) {
 			for (World world : plugin.getServer().getWorlds()) {
 				for (LivingEntity entity : world.getLivingEntities()) {
 					if (entity instanceof Tameable && ((Tameable) entity).isTamed() && ((Tameable) entity).getOwner() instanceof Player) {
