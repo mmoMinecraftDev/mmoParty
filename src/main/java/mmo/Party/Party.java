@@ -16,7 +16,7 @@
  */
 package mmo.Party;
 
-import mmo.Core.ArrayListString;
+import mmo.Core.util.ArrayListString;
 import mmo.Core.MMO;
 
 import java.util.ArrayList;

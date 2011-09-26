@@ -17,12 +17,13 @@
 package mmo.Party;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 import mmo.Chat.Chat;
 import mmo.Core.MMO;
 import mmo.Core.MMOPlugin;
+import mmo.Core.util.EnumBitSet;
 import mmo.CoreAPI.MMOListener;
+import mmo.CoreAPI.MMOMinecraft;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -52,9 +53,9 @@ public class MMOParty extends MMOPlugin {
 	static boolean config_leave_on_quit = false;
 
 	@Override
-	public BitSet mmoSupport(BitSet support) {
-		support.set(MMO_PLAYER);
-		support.set(MMO_DATABASE);
+	public EnumBitSet mmoSupport(EnumBitSet support) {
+		support.set(Support.MMO_PLAYER);
+		support.set(Support.MMO_DATABASE);
 		return support;
 	}
 
@@ -119,7 +120,7 @@ public class MMOParty extends MMOPlugin {
 			boolean isLeader = party == null ? true : party.isLeader(player);
 			if (args.length == 0) {
 				//<editor-fold defaultstate="collapsed" desc="/party">
-				if (MMOListener.mmoChatAPI) {
+				if (MMOMinecraft.mmoChatAPI) {
 					Chat.doChat("Party", player, "");
 				} else {
 					return false;
@@ -147,7 +148,7 @@ public class MMOParty extends MMOPlugin {
 				if (isParty && isLeader) {
 					sendMessage(player, "/party kick <player>");
 				}
-				if (isParty && MMOListener.mmoChatAPI) {
+				if (isParty && MMOMinecraft.mmoChatAPI) {
 					sendMessage(player, "/party <message>");
 				}
 				//</editor-fold>
@@ -260,7 +261,7 @@ public class MMOParty extends MMOPlugin {
 				//</editor-fold>
 			} else {
 				//<editor-fold defaultstate="collapsed" desc="/party <message>">
-				if (MMOListener.mmoChatAPI) {
+				if (MMOMinecraft.mmoChatAPI) {
 					String output = "";
 					for (String word : args) {
 						output += word + " ";
