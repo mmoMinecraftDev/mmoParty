@@ -16,8 +16,8 @@
  */
 package mmo.Party;
 
-import mmo.CoreAPI.MMOListener;
-import mmo.DamageAPI.MMODamageEvent;
+import mmo.Core.DamageAPI.MMODamageEvent;
+import mmo.Core.MMOListener;
 import org.bukkit.entity.Player;
 
 public class PartyDamage extends MMOListener {

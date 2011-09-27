@@ -18,8 +18,8 @@ package mmo.Party;
 
 import java.util.HashSet;
 
-import mmo.ChatAPI.MMOChatEvent;
-import mmo.CoreAPI.MMOListener;
+import mmo.Core.ChatAPI.MMOChatEvent;
+import mmo.Core.MMOListener;
 import org.bukkit.entity.Player;
 
 public class PartyChannel extends MMOListener {
