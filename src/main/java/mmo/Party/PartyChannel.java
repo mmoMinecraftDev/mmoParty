@@ -28,10 +28,10 @@ public class PartyChannel extends MMOListener {
 	public void onMMOChat(MMOChatEvent event) {
 		if (event.hasFilter("Party")) {
 			Player from = event.getPlayer();
-			Party party = Party.find(from);
+			PartyAPI party = PartyAPI.instance.find(from);
 			HashSet<Player> recipients = (HashSet<Player>) event.getRecipients();
 			for (Player to : new HashSet<Player>(recipients)) {
-				if (party == null || party != Party.find(to)) {
+				if (party == null || !party.contains(to)) {
 					recipients.remove(to);
 				}
 			}

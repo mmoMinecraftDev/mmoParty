@@ -30,7 +30,7 @@ public class PartyDamage extends MMOListener {
 
 	@Override
 	public void onMMOPVPDamage(MMODamageEvent event) {
-		if (MMOParty.config_no_party_pvp && Party.isSameParty((Player) event.getAttacker(), (Player) event.getDefender())) {
+		if (MMOParty.config_no_party_pvp && PartyAPI.instance.find((Player) event.getAttacker()).contains((Player) event.getDefender())) {
 			if (MMOParty.config_no_party_pvp_quiet) {
 				plugin.sendMessage((Player) event.getAttacker(), "Can't attack your own party!");
 			}

@@ -18,11 +18,11 @@ package mmo.Party;
 
 import java.util.ArrayList;
 import java.util.List;
-import mmo.Core.ChatAPI.Chat;
 import mmo.Core.MMO;
 import mmo.Core.MMOPlugin;
 import mmo.Core.util.EnumBitSet;
 import mmo.Core.MMOMinecraft;
+import mmo.Core.PartyAPI.Party;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -36,6 +36,7 @@ import org.getspout.spoutapi.player.SpoutPlayer;
 
 public class MMOParty extends MMOPlugin {
 
+	static final PartyAPI partyapi = PartyAPI.instance;
 	private int updateTask;
 	/**
 	 * Config options
@@ -61,27 +62,20 @@ public class MMOParty extends MMOPlugin {
 	@Override
 	public void onEnable() {
 		super.onEnable();
-
+		MMOMinecraft.addAPI(partyapi);
 
 		pm.registerEvent(Type.CUSTOM_EVENT, new PartyDamage(this), Priority.Highest, this);
 		pm.registerEvent(Type.CUSTOM_EVENT, new PartyChannel(), Priority.Normal, this);
 
-		Party.plugin = this;
-		Party.load();
-
-		for (Player player : getServer().getOnlinePlayers()) {
-			if (Party.find(player) == null) {
-				//ToDo: Catch this Leak
-				new Party(player.getName());
-			}
-		}
+		PartyAPI.plugin = this;
+		PartyAPI.loadAll();
 
 		updateTask = getServer().getScheduler().scheduleSyncRepeatingTask(this,
 				new Runnable() {
 
 					@Override
 					public void run() {
-						Party.updateAll();
+						PartyAPI.updateAll();
 					}
 				}, 20, 20);
 	}
@@ -103,8 +97,6 @@ public class MMOParty extends MMOPlugin {
 	@Override
 	public void onDisable() {
 		getServer().getScheduler().cancelTask(updateTask);
-		Party.save();
-		Party.clear();
 		super.onDisable();
 	}
 
@@ -115,7 +107,7 @@ public class MMOParty extends MMOPlugin {
 		}
 		Player player = (Player) sender;
 		if (command.getName().equalsIgnoreCase("party")) {
-			Party party = Party.find(player);
+			PartyAPI party = partyapi.find(player);
 			boolean isParty = party == null ? false : party.isParty();
 			boolean isLeader = party == null ? true : party.isLeader(player);
 			if (args.length == 0) {
@@ -155,7 +147,7 @@ public class MMOParty extends MMOPlugin {
 			} else if (args[0].equalsIgnoreCase("status")) {
 				//<editor-fold defaultstate="collapsed" desc="/party status">
 				if (!isParty) {
-					List<Party> invites = Party.findInvites(player);
+					List<Party> invites = partyapi.findInvites(player);
 					String output = "You are not in a party, and have ";
 					if (invites.isEmpty()) {
 						output += "no party invites";
@@ -179,9 +171,6 @@ public class MMOParty extends MMOPlugin {
 			} else if (args[0].equalsIgnoreCase("invite")) {
 				//<editor-fold defaultstate="collapsed" desc="/party invite <player>">
 				if (args.length > 1) {
-					if (party == null) {
-						party = new Party(player.getName());
-					}
 					party.invite(player, args[1]);
 				} else {
 					sendMessage(player, "Who do you want to invite?");
@@ -202,9 +191,9 @@ public class MMOParty extends MMOPlugin {
 				if (isParty) {
 					sendMessage(player, "You are already in a party.");
 				} else {
-					List<Party> invites = Party.findInvites(player);
+					List<Party> invites = partyapi.findInvites(player);
 					if (args.length > 1) {
-						party = Party.find(args[1]);
+						party = partyapi.find(args[1]);
 						if (party == null) {
 							sendMessage(player, "Unable to find that party.");
 						} else {
@@ -223,9 +212,9 @@ public class MMOParty extends MMOPlugin {
 				//</editor-fold>
 			} else if (args[0].equalsIgnoreCase("decline")) {
 				//<editor-fold defaultstate="collapsed" desc="/party decline <leader>">
-				List<Party> invites = Party.findInvites(player);
+				List<Party> invites = partyapi.findInvites(player);
 				if (args.length > 1) {
-					party = Party.find(args[1]);
+					party = partyapi.find(args[1]);
 					if (party == null) {
 						sendMessage(player, "Unable to find that party.");
 					} else {
@@ -286,12 +275,11 @@ public class MMOParty extends MMOPlugin {
 
 	@Override
 	public void onPlayerJoin(Player player) {
-		Party party = Party.find(player);
-		if (party == null) {
-			//ToDo: Catch this Leak
-			new Party(player.getName());
+		PartyAPI party = partyapi.find(player);
+		if (party.isParty()) {
+			party.update();
 		} else {
-			List<Party> invites = Party.findInvites(player);
+			List<Party> invites = partyapi.findInvites(player);
 			if (!invites.isEmpty()) {
 				String output = "Invitations from: ";
 				boolean first = true;
@@ -305,16 +293,15 @@ public class MMOParty extends MMOPlugin {
 				plugin.sendMessage(player, output);
 			}
 		}
-		Party.update(player);
 	}
 
 	@Override
 	public void onPlayerQuit(Player player) {
-		Party.containers.remove(player);
-		Party party = Party.find(player);
+		PartyAPI.containers.remove(player);
+		PartyAPI party = partyapi.find(player);
 		if (party != null) {
 			if (!party.isParty() && !party.hasInvites()) {
-				Party.delete(party);
+				PartyAPI.delete(party);
 			} else if (config_leave_on_quit) {
 				party.leave(player);
 			} else {
@@ -328,7 +315,7 @@ public class MMOParty extends MMOPlugin {
 		Container container = getContainer(player, config_ui_align, config_ui_left, config_ui_top);
 		Container members = new GenericContainer();
 		container.setLayout(ContainerType.HORIZONTAL).addChildren(members, new GenericContainer()).setWidth(config_ui_maxwidth);
-		Party.containers.put(player, members);
-		Party.update(player);
+		PartyAPI.containers.put(player, members);
+		PartyAPI.updateAll(player);
 	}
 }

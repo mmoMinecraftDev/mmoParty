@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import mmo.Core.PartyAPI.Party;
 import mmo.Core.gui.GenericLivingEntity;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -34,13 +35,18 @@ import org.bukkit.entity.Tameable;
 import org.getspout.spoutapi.gui.Container;
 import org.getspout.spoutapi.gui.Widget;
 
-public class Party {
+public class PartyAPI implements Party {
 
+	/**
+	 * Singleton instance - only for finding parties
+	 */
+	public final static PartyAPI instance = new PartyAPI();
+	// ...and now the class...
 	protected static MMOParty plugin;
 	/**
 	 * All the active parties, use "party.remove()" where needed.
 	 */
-	private static final ArrayList<Party> parties = new ArrayList<Party>();
+	private static final ArrayList<PartyAPI> parties = new ArrayList<PartyAPI>();
 	/**
 	 * The names of all members of this party.
 	 */
@@ -61,7 +67,7 @@ public class Party {
 	/**
 	 * Constructor.
 	 */
-	public Party() {
+	private PartyAPI() {
 		this("", "", "");
 	}
 
@@ -69,7 +75,7 @@ public class Party {
 	 * Constructor.
 	 * @param names The player names to add
 	 */
-	public Party(String leader) {
+	private PartyAPI(String leader) {
 		this(leader, leader, "");
 	}
 
@@ -77,7 +83,7 @@ public class Party {
 	 * Constructor.
 	 * @param names The player names to add
 	 */
-	public Party(String leader, String names) {
+	private PartyAPI(String leader, String names) {
 		this(leader, names, "");
 	}
 
@@ -86,8 +92,7 @@ public class Party {
 	 * @param names The player names to add
 	 * @param invites The player names to invite
 	 */
-	public Party(String leader, String names, String invite) {
-		parties.add(this); // Make sure we can store the new party
+	private PartyAPI(String leader, String names, String invite) {
 		this.leader = leader;
 		if (!names.equals("")) {
 			members.addAll(Arrays.asList(names.split(",")));
@@ -100,16 +105,10 @@ public class Party {
 	/**
 	 * Load all parties and invites.
 	 */
-	protected static void load() {
-//		Configuration cfg = new Configuration(new File(mmo.plugin.getDataFolder(), "parties.yml"));
-//		cfg.load();
-//		for (String leader : cfg.getKeys()) {
-//			new Party(leader, cfg.getString(leader + ".members", ""), cfg.getString(leader + ".invites", ""));
-//		}
+	protected static void loadAll() {
 		try {
-//			plugin.log("Loading: " + plugin.getDatabase().find(PartyDB.class).setAutofetch(true).findList());
 			for (PartyDB row : plugin.getDatabase().find(PartyDB.class).setAutofetch(true).findList()) {
-				new Party(row.getLeader(), row.getMembers(), row.getInvites());
+				parties.add(new PartyAPI(row.getLeader(), row.getMembers(), row.getInvites())); // Make sure we can store the new party
 			}
 		} catch (Exception e) {
 		}
@@ -118,20 +117,27 @@ public class Party {
 	/**
 	 * Save all parties and invites.
 	 */
-	protected static void save() {
-		for (Party party : parties) {
-			PartyDB row = plugin.getDatabase().find(PartyDB.class).where().ieq("leader", party.leader).findUnique();
-			if (party.isParty() || !party.invites.isEmpty()) {
-				if (row == null) {
-					row = new PartyDB();
-					row.setLeader(party.leader);
-				}
-				row.setMembers(party.getMemberNames());
-				row.setInvites(party.getInviteNames());
-				plugin.getDatabase().save(row);
-			} else if (row != null) {
-				plugin.getDatabase().delete(row);
+	protected static void saveAll() {
+		for (PartyAPI party : parties) {
+			party.save();
+		}
+	}
+
+	/**
+	 * Save the party.
+	 */
+	protected void save() {
+		PartyDB row = plugin.getDatabase().find(PartyDB.class).where().ieq("leader", leader).findUnique();
+		if (isParty() || !invites.isEmpty()) {
+			if (row == null) {
+				row = new PartyDB();
+				row.setLeader(leader);
 			}
+			row.setMembers(getMemberNames());
+			row.setInvites(getInviteNames());
+			plugin.getDatabase().save(row);
+		} else if (row != null) {
+			plugin.getDatabase().delete(row);
 		}
 	}
 
@@ -139,79 +145,51 @@ public class Party {
 	 * Delete a Party from the global list.
 	 * @param party The Party to remove
 	 */
-	public static void delete(Party party) {
+	public static void delete(PartyAPI party) {
 		if (party != null && parties.contains(party)) {
 			parties.remove(parties.indexOf(party));
 		}
 	}
 
-	/**
-	 * Clear all saved parties - only meant for onDisable.
-	 */
-	protected static void clear() {
-		parties.clear();
-	}
-
-	/**
-	 * Find a Party via a Player.
-	 * @param player The player who's party we are trying to find
-	 * @return The Party they are a member of, or null
-	 */
-	public static Party find(Player player) {
+	@Override
+	public PartyAPI find(Player player) {
 		return find(player.getName());
 	}
 
-	/**
-	 * Find a Party via a player name.
-	 * @param player The player who's party we are trying to find
-	 * @return The Party they are a member of, or null
-	 */
-	public static Party find(String player) {
-		for (Party party : parties) {
+	@Override
+	public PartyAPI find(String player) {
+		for (PartyAPI party : parties) {
 			if (party.members.contains(player)) {
 				return party;
 			}
 		}
-		return null;
+		PartyAPI party = new PartyAPI(player);
+		parties.add(party); // Make sure we can store the new party
+		return party;
 	}
 
-	/**
-	 * Checks whether two players are in the same party
-	 * @param a First player
-	 * @param b Second player
-	 * @return If they're both in the same party
-	 */
-	public static boolean isSameParty(Player a, Player b) {
-		if (a != null && b != null && find(a) == find(b)) {
+	@Override
+	public boolean contains(Player player) {
+		if (player != null && find(player) == this) {
 			return true;
 		}
 		return false;
 	}
 
-	/**
-	 * Returns whether this is a real party, or a single player with invites.
-	 * @return Whether there are party members other than the leader
-	 */
+	@Override
 	public boolean isParty() {
 		return (members.size() > 1);
 	}
 
-	/**
-	 * Returns whether this party has any invites.
-	 * @return Whether there are invites outstanding
-	 */
+	@Override
 	public boolean hasInvites() {
 		return !invites.isEmpty();
 	}
 
-	/**
-	 * Find all outstanding invites for a Player.
-	 * @param player The Player we're interested in
-	 * @return A List of parties that have invited player
-	 */
-	public static List<Party> findInvites(Player player) {
+	@Override
+	public List<Party> findInvites(Player player) {
 		ArrayList<Party> list = new ArrayList<Party>();
-		for (Party party : parties) {
+		for (PartyAPI party : parties) {
 			if (party.invites.contains(player.getName())) {
 				list.add(party);
 			}
@@ -219,33 +197,22 @@ public class Party {
 		return list;
 	}
 
-	/**
-	 * Remove all outstanding invites for a Player.
-	 * @param player The Player to un-invite
-	 */
-	public static void declineInvites(Player player) {
-		for (Party party : findInvites(player)) {
+	@Override
+	public void declineInvites(Player player) {
+		for (PartyAPI party : parties) {
 			if (party.invites.contains(player.getName())) {
 				party.invites.remove(party.invites.indexOf(player.getName()));
+				party.save();
 			}
 		}
-		Party.save();
 	}
 
-	/**
-	 * Get online players in a party, exclude a single player from the list.
-	 * @param name The player to exclude from the list
-	 * @return A list of all online players
-	 */
+	@Override
 	public List<Player> getMembers(String name) {
 		return getMembers(plugin.getServer().getPlayer(name));
 	}
 
-	/**
-	 * Get online players in a party, exclude a single player from the list.
-	 * @param name The player to exclude from the list
-	 * @return A list of all online players
-	 */
+	@Override
 	public List<Player> getMembers(Player player) {
 		List<Player> players = getMembers();
 		if (player != null && players.contains(player)) {
@@ -254,10 +221,7 @@ public class Party {
 		return players;
 	}
 
-	/**
-	 * Get online players in a party.
-	 * @return A list of all online players
-	 */
+	@Override
 	public List<Player> getMembers() {
 		ArrayList<Player> players = new ArrayList<Player>();
 		for (String name : members) {
@@ -269,10 +233,7 @@ public class Party {
 		return players;
 	}
 
-	/**
-	 * Get all players in a party.
-	 * @return A list of player names separated by commas
-	 */
+	@Override
 	public String getMemberNames() {
 		String names = "";
 		boolean first = true;
@@ -283,10 +244,7 @@ public class Party {
 		return names;
 	}
 
-	/**
-	 * Get all players invites to a party.
-	 * @return A list of player names separated by commas
-	 */
+	@Override
 	public String getInviteNames() {
 		String names = "";
 		boolean first = true;
@@ -297,24 +255,17 @@ public class Party {
 		return names;
 	}
 
-	/**
-	 * Get the number of members in this Party.
-	 * @return The number of members
-	 */
+	@Override
 	public int size() {
 		return members.size();
 	}
 
-	/**
-	 * Adds an invited online Player to this Party.
-	 * @param player The player to add
-	 * @return If they have been successfully added
-	 */
+	@Override
 	public boolean accept(Player player) {
 		if (player == null) {
 			return false;
 		}
-		Party party = Party.find(player);
+		PartyAPI party = find(player);
 		if (party != null && party.isParty()) {
 			plugin.sendMessage(player, "You are already in a party.");
 			return false;
@@ -330,7 +281,7 @@ public class Party {
 		}
 		declineInvites(player); // Make sure they have no outstanding invites from anywhere else
 		if (party != null) { // Only if they're the only member - and were sending out invites
-			Party.delete(party);
+			PartyAPI.delete(party);
 		}
 		// Note the order - send to everyone in the party so the new member gets a custom msg
 		plugin.sendMessage(getMembers(), "%s has joined the party.", MMO.name(player.getName()));
@@ -339,54 +290,38 @@ public class Party {
 		plugin.notify(player, "Joined %s", MMO.name(leader));
 		members.add(player.getName());
 		update();
-		Party.save();
+		save();
 		return true;
 	}
 
-	/**
-	 * Removes an invite for a Player.
-	 * @param player The Player to un-invite
-	 * @return Whether they had a valid invite or not
-	 */
+	@Override
 	public boolean decline(Player player) {
 		if (player != null && invites.contains(player.getName())) {
 			invites.remove(invites.indexOf(player.getName()));
 			plugin.sendMessage(player, "Declined invitation from %s.", MMO.name(leader));
-			Party.save();
+			save();
 			return true;
 		}
 		return false;
 	}
 
-	/**
-	 * Delete a Player from a Party.
-	 * This removes the Player from this party,
-	 * and will delete the party if it is now empty.
-	 * @param player The Player to remove from this party
-	 * @return Whether they have been removed or not found
-	 */
+	@Override
 	public boolean remove(String name) {
 		if (members.contains(name)) {
 			members.remove(members.indexOf(name));
 			if (members.isEmpty()) {
-				Party.delete(this);
+				PartyAPI.delete(this);
 			} else {
 				update();
 			}
-			new Party(name);
-			update(name);
-			Party.save();
+			updateAll(name);
+			save();
 			return true;
 		}
 		return false;
 	}
 
-	/**
-	 * Promote a Player to party leader.
-	 * @param leader The person attempting it
-	 * @param name The player to promote
-	 * @return If they have been promoted
-	 */
+	@Override
 	public boolean promote(Player leader, String name) {
 		if (!isLeader(leader)) {
 			plugin.sendMessage(leader, "You are not the party leader.");
@@ -410,15 +345,11 @@ public class Party {
 		plugin.sendMessage(leader, "Promoted %s to leader.", MMO.name(this.leader));
 		plugin.sendMessage(name, "You have been promoted to leader.");
 		update();
-		Party.save();
+		save();
 		return true;
 	}
 
-	/**
-	 * Leave a party (in a friendly way).
-	 * @param player The Player leaving
-	 * @return Whether they left this party
-	 */
+	@Override
 	public boolean leave(Player player) {
 		if (remove(player.getName())) {
 			plugin.sendMessage(player, "You have left your party.");
@@ -430,17 +361,13 @@ public class Party {
 				plugin.notify(leader, "Promoted to leader");
 				plugin.notify(getMembers(leader), "%s is now leader", MMO.name(leader));
 			}
+			save();
 			return true;
 		}
 		return false;
 	}
 
-	/**
-	 * Leave a party (in an unfriendly way).
-	 * @param leader The Player attempting to do this
-	 * @param player The Player leaving
-	 * @return Whether they left this party
-	 */
+	@Override
 	public boolean kick(Player leader, String name) {
 		if (!isLeader(leader)) {
 			plugin.sendMessage(leader, "You are not the party leader.");
@@ -462,53 +389,26 @@ public class Party {
 		plugin.sendMessage(getMembers(), "%s has been kicked out of the party.", MMO.name(name));
 		plugin.sendMessage(name, "You have been kicked from the party.");
 		plugin.notify(getMembers(), "%s kicked", MMO.name(name));
+		save();
 		return true;
 	}
 
-	/**
-	 * Determines if the Player is able to invite / kick etc
-	 * @param player The player to check
-	 * @return If they are the party leader or not
-	 */
+	@Override
 	public boolean isLeader(Player player) {
 		return isLeader(player.getName());
 	}
 
-	/**
-	 * Determines if the Player is able to invite / kick etc
-	 * @param name The player to check
-	 * @return If they are the party leader or not
-	 */
+	@Override
 	public boolean isLeader(String name) {
 		return name != null && leader.equalsIgnoreCase(name);
 	}
 
-	/**
-	 * Get the party leader.
-	 * @return Party leader name
-	 */
+	@Override
 	public String getLeader() {
 		return leader;
 	}
 
-	/**
-	 * Determines if the Player is part of this party
-	 * @param player The player to check
-	 * @return If they are a member or not
-	 */
-	public boolean isMember(Player player) {
-		if (player != null && members.contains(player.getName())) {
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Invite a player to the party.
-	 * @param leader The Player attempting to do this
-	 * @param name The player to invite
-	 * @return Whether the invitation was successful
-	 */
+	@Override
 	public boolean invite(Player leader, String name) {
 		if (!isLeader(leader)) {
 			plugin.sendMessage(leader, "You are not the party leader.");
@@ -527,7 +427,7 @@ public class Party {
 			plugin.sendMessage(leader, "You don't have space in your party.");
 			return false;
 		}
-		Party party = find(player);
+		PartyAPI party = find(player);
 		if (party != null && party.size() > 1) {
 			if (this == party) {
 				plugin.sendMessage(leader, "They are already in your party.");
@@ -544,27 +444,24 @@ public class Party {
 		plugin.sendMessage(player, "You have been invited to a join party by %s\nTo accept type: /party accept %s", MMO.name(this.leader), this.leader);
 		plugin.sendMessage(leader, "You have invited %s", MMO.name(player.getName()));
 		plugin.notify(player, "Invite from %s", MMO.name(leader.getName()));
-		Party.save();
+		save();
 		return true;
 	}
 
 	/**
 	 * Update all party members in Player's party.
 	 */
-	public static void update(String name) {
-		update(plugin.getServer().getPlayer(name));
+	public static void updateAll(String name) {
+		updateAll(plugin.getServer().getPlayer(name));
 	}
 
 	/**
 	 * Update all party members in Player's party.
 	 * @param player The Player to update
 	 */
-	public static void update(Player player) {
+	public static void updateAll(Player player) {
 		if (player != null) {
-			Party party = Party.find(player);
-			if (party == null) {
-				new Party(player.getName());
-			}
+			PartyAPI party = instance.find(player);
 			party.update();
 		}
 	}
@@ -573,22 +470,29 @@ public class Party {
 	 * Update all parties.
 	 */
 	public static void updateAll() {
-		for (Party party : parties) {
+		for (PartyAPI party : parties) {
 			party.update();
 		}
 	}
 
-	/**
-	 * Update all party members.
-	 */
+	@Override
 	public void update() {
-		if (MMOParty.hasSpout && members.size() > 1 || MMOParty.config_always_show) {
+		if (MMOParty.hasSpout) {
 			for (Player player : getMembers()) {
-				Container container = containers.get(player);
+				update(player);
+			}
+		}
+	}
 
-				if (container != null) {
-					int index = 0;
-					Widget[] bars = container.getChildren();
+	@Override
+	public void update(Player player) {
+		if (MMOParty.hasSpout) {
+			Container container = containers.get(player);
+
+			if (container != null) {
+				int index = 0;
+				Widget[] bars = container.getChildren();
+				if (members.size() > 1 || MMOParty.config_always_show) {
 					for (String name : members.meFirst(player.getName())) {
 						GenericLivingEntity bar;
 						if (index >= bars.length) {
@@ -600,17 +504,17 @@ public class Party {
 						bar.setTargets(MMOParty.config_show_pets ? MMO.getPets(plugin.getServer().getPlayer(name)) : null);
 						index++;
 					}
-					while (index < bars.length) {
-						container.removeChild(bars[index++]);
-					}
-					container.updateLayout();
 				}
+				while (index < bars.length) {
+					container.removeChild(bars[index++]);
+				}
+				container.updateLayout();
 			}
 		}
 	}
 
 	/**
-	 * Get an array of member_name:status strings, used for UI and /party status
+	 * Get an array of member_name:status strings, used for /party status
 	 * @return 
 	 */
 	private HashMap<String, String> getStatus() {
@@ -650,10 +554,7 @@ public class Party {
 		return status;
 	}
 
-	/**
-	 * Print current party status.
-	 * @param name Who we send it to
-	 */
+	@Override
 	public void status(Player player) {
 		if (player != null) {
 			HashMap<String, String> status = getStatus();
