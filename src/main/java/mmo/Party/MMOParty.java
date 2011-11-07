@@ -55,20 +55,17 @@ public class MMOParty extends MMOPlugin {
 	@Override
 	public EnumBitSet mmoSupport(EnumBitSet support) {
 		support.set(Support.MMO_PLAYER);
-		support.set(Support.MMO_DATABASE);
 		return support;
 	}
 
 	@Override
 	public void onEnable() {
 		super.onEnable();
+		PartyAPI.plugin = this;
 		MMOMinecraft.addAPI(partyapi);
 
 		pm.registerEvent(Type.CUSTOM_EVENT, new PartyDamage(this), Priority.Highest, this);
 		pm.registerEvent(Type.CUSTOM_EVENT, new PartyChannel(), Priority.Normal, this);
-
-		PartyAPI.plugin = this;
-		PartyAPI.loadAll();
 
 		updateTask = getServer().getScheduler().scheduleSyncRepeatingTask(this,
 				new Runnable() {
@@ -264,13 +261,6 @@ public class MMOParty extends MMOPlugin {
 			return true;
 		}
 		return false;
-	}
-
-	@Override
-	public List<Class<?>> getDatabaseClasses() {
-		List<Class<?>> list = new ArrayList<Class<?>>();
-		list.add(PartyDB.class);
-		return list;
 	}
 
 	@Override

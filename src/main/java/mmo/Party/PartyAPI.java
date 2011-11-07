@@ -16,16 +16,15 @@
  */
 package mmo.Party;
 
-import mmo.Core.util.ArrayListString;
-import mmo.Core.MMO;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import mmo.Core.MMO;
 import mmo.Core.PartyAPI.Party;
 import mmo.Core.gui.GenericLivingEntity;
+import mmo.Core.util.ArrayListString;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -103,51 +102,42 @@ public class PartyAPI implements Party {
 	}
 
 	/**
-	 * Load all parties and invites.
-	 */
-	protected static void loadAll() {
-		try {
-			for (PartyDB row : plugin.getDatabase().find(PartyDB.class).setAutofetch(true).findList()) {
-				parties.add(new PartyAPI(row.getLeader(), row.getMembers(), row.getInvites())); // Make sure we can store the new party
-			}
-		} catch (Exception e) {
-		}
-	}
-
-	/**
-	 * Save all parties and invites.
-	 */
-	protected static void saveAll() {
-		for (PartyAPI party : parties) {
-			party.save();
-		}
-	}
-
-	/**
-	 * Save the party.
-	 */
-	protected void save() {
-		PartyDB row = plugin.getDatabase().find(PartyDB.class).where().ieq("leader", leader).findUnique();
-		if (isParty() || !invites.isEmpty()) {
-			if (row == null) {
-				row = new PartyDB();
-				row.setLeader(leader);
-			}
-			row.setMembers(getMemberNames());
-			row.setInvites(getInviteNames());
-			plugin.getDatabase().save(row);
-		} else if (row != null) {
-			plugin.getDatabase().delete(row);
-		}
-	}
-
-	/**
 	 * Delete a Party from the global list.
 	 * @param party The Party to remove
 	 */
 	public static void delete(PartyAPI party) {
 		if (party != null && parties.contains(party)) {
 			parties.remove(parties.indexOf(party));
+		}
+	}
+
+	/**
+	 * Save various state changes about the party.
+	 * @param player a player who has changed, either left or not leader
+	 * @param setLeader the leader has changed
+	 * @param setMembers a member has joined or left
+	 * @param setInvites someone has been invited or accepted an invite
+	 */
+	protected void save(String player, boolean setLeader, boolean setMembers, boolean setInvites) {
+		if (player != null) {
+			if (members.contains(player)) {
+				plugin.setString(player, "leader", leader);
+			} else {
+				plugin.deleteData(player, "leader");
+			}
+			plugin.deleteData(player, "members");
+			plugin.deleteData(player, "invites");
+		}
+		if (setLeader) {
+			for (String member : members) {
+				plugin.setString(member, "leader", leader);
+			}
+		}
+		if (setLeader || setMembers) {
+			plugin.setStringList(leader, "members", members);
+		}
+		if (setLeader || setInvites) {
+			plugin.setStringList(leader, "invites", invites);
 		}
 	}
 
@@ -163,7 +153,13 @@ public class PartyAPI implements Party {
 				return party;
 			}
 		}
-		PartyAPI party = new PartyAPI(player);
+		String leaderName = plugin.getString(player, "leader", null);
+		PartyAPI party;
+		if (leaderName != null) {
+			party = new PartyAPI(leaderName, plugin.getString(leaderName, "members", ""), plugin.getString(leaderName, "invites", ""));
+		} else {
+			party = new PartyAPI(player);
+		}
 		parties.add(party); // Make sure we can store the new party
 		return party;
 	}
@@ -202,7 +198,7 @@ public class PartyAPI implements Party {
 		for (PartyAPI party : parties) {
 			if (party.invites.contains(player.getName())) {
 				party.invites.remove(party.invites.indexOf(player.getName()));
-				party.save();
+				party.save(null, false, false, true);
 			}
 		}
 	}
@@ -289,8 +285,8 @@ public class PartyAPI implements Party {
 		plugin.sendMessage(player, "You have joined a party.");
 		plugin.notify(player, "Joined %s", MMO.name(leader));
 		members.add(player.getName());
+		save(player.getName(), false, true, true);
 		update();
-		save();
 		return true;
 	}
 
@@ -298,8 +294,8 @@ public class PartyAPI implements Party {
 	public boolean decline(Player player) {
 		if (player != null && invites.contains(player.getName())) {
 			invites.remove(invites.indexOf(player.getName()));
+			save(null, false, false, true);
 			plugin.sendMessage(player, "Declined invitation from %s.", MMO.name(leader));
-			save();
 			return true;
 		}
 		return false;
@@ -309,22 +305,20 @@ public class PartyAPI implements Party {
 	public boolean remove(String name) {
 		if (members.contains(name)) {
 			members.remove(members.indexOf(name));
-			if (members.isEmpty()) {
-				PartyAPI.delete(this);
-			} else {
+			save(name, false, true, false);
+			if (!members.isEmpty()) {
 				update();
 			}
 			updateAll(name);
-			save();
 			return true;
 		}
 		return false;
 	}
 
 	@Override
-	public boolean promote(Player leader, String name) {
-		if (!isLeader(leader)) {
-			plugin.sendMessage(leader, "You are not the party leader.");
+	public boolean promote(Player asker, String name) {
+		if (!isLeader(asker)) {
+			plugin.sendMessage(asker, "You are not the party leader.");
 			return false;
 		}
 		if (!isParty()) {
@@ -339,13 +333,12 @@ public class PartyAPI implements Party {
 			plugin.sendMessage(leader, "You are already the party leader.");
 			return false;
 		}
-		this.leader = members.get(name);
+		save(null, true, false, false);
 		plugin.notify(name, "Promoted to leader");
-		plugin.notify(getMembers(name), "%s promoted", MMO.name(this.leader));
-		plugin.sendMessage(leader, "Promoted %s to leader.", MMO.name(this.leader));
+		plugin.notify(getMembers(name), "%s promoted", MMO.name(leader));
+		plugin.sendMessage(asker, "Promoted %s to leader.", MMO.name(leader));
 		plugin.sendMessage(name, "You have been promoted to leader.");
 		update();
-		save();
 		return true;
 	}
 
@@ -355,13 +348,14 @@ public class PartyAPI implements Party {
 			plugin.sendMessage(player, "You have left your party.");
 			plugin.sendMessage(getMembers(), "%s has left the party.", MMO.name(player.getName()));
 			plugin.notify(getMembers(), "%s left", MMO.name(player.getName()));
+			plugin.deleteData(player, "leader");
+			save(player.getName(), isLeader(player), true, false);
 			if (isLeader(player)) {
 				leader = members.get(0);
 				plugin.sendMessage(leader, "You are now the party leader");
 				plugin.notify(leader, "Promoted to leader");
 				plugin.notify(getMembers(leader), "%s is now leader", MMO.name(leader));
 			}
-			save();
 			return true;
 		}
 		return false;
@@ -389,7 +383,7 @@ public class PartyAPI implements Party {
 		plugin.sendMessage(getMembers(), "%s has been kicked out of the party.", MMO.name(name));
 		plugin.sendMessage(name, "You have been kicked from the party.");
 		plugin.notify(getMembers(), "%s kicked", MMO.name(name));
-		save();
+		save(name, false, true, false);
 		return true;
 	}
 
@@ -444,7 +438,7 @@ public class PartyAPI implements Party {
 		plugin.sendMessage(player, "You have been invited to a join party by %s\nTo accept type: /party accept %s", MMO.name(this.leader), this.leader);
 		plugin.sendMessage(leader, "You have invited %s", MMO.name(player.getName()));
 		plugin.notify(player, "Invite from %s", MMO.name(leader.getName()));
-		save();
+		this.save(null, false, false, true);
 		return true;
 	}
 
