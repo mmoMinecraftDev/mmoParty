@@ -3,7 +3,7 @@ main: mmo.Party.MMOParty
 version: 1.4
 website: http://forums.bukkit.org/threads/31055/
 author: Rycochet <rycochet@rycochet.com>
-depend: [mmoCore]
+depend: [Spout,mmoCore]
 softdepend: [mmoChat]
 
 description: Simply "party" system for players. Single party leader, can invite others. When leader quits leadership falls to first invited etc. Uses Spout to display party members to everyone.

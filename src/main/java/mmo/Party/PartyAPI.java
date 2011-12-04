@@ -471,39 +471,35 @@ public class PartyAPI implements Party {
 
 	@Override
 	public void update() {
-		if (MMOParty.hasSpout) {
-			for (Player player : getMembers()) {
-				update(player);
-			}
+		for (Player player : getMembers()) {
+			update(player);
 		}
 	}
 
 	@Override
 	public void update(Player player) {
-		if (MMOParty.hasSpout) {
-			Container container = containers.get(player);
+		Container container = containers.get(player);
 
-			if (container != null) {
-				int index = 0;
-				Widget[] bars = container.getChildren();
-				if (members.size() > 1 || MMOParty.config_always_show) {
-					for (String name : members.meFirst(player.getName())) {
-						GenericLivingEntity bar;
-						if (index >= bars.length) {
-							container.addChild(bar = new GenericLivingEntity());
-						} else {
-							bar = (GenericLivingEntity) bars[index];
-						}
-						bar.setEntity(name, isLeader(name) ? ChatColor.GREEN + "@" : "");
-						bar.setTargets(MMOParty.config_show_pets ? MMO.getPets(plugin.getServer().getPlayer(name)) : null);
-						index++;
+		if (container != null) {
+			int index = 0;
+			Widget[] bars = container.getChildren();
+			if (members.size() > 1 || MMOParty.config_always_show) {
+				for (String name : members.meFirst(player.getName())) {
+					GenericLivingEntity bar;
+					if (index >= bars.length) {
+						container.addChild(bar = new GenericLivingEntity());
+					} else {
+						bar = (GenericLivingEntity) bars[index];
 					}
+					bar.setEntity(name, isLeader(name) ? ChatColor.GREEN + "@" : "");
+					bar.setTargets(MMOParty.config_show_pets ? MMO.getPets(plugin.getServer().getPlayer(name)) : null);
+					index++;
 				}
-				while (index < bars.length) {
-					container.removeChild(bars[index++]);
-				}
-				container.updateLayout();
 			}
+			while (index < bars.length) {
+				container.removeChild(bars[index++]);
+			}
+			container.updateLayout();
 		}
 	}
 
