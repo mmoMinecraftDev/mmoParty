@@ -16,7 +16,6 @@
  */
 package mmo.Party;
 
-import java.util.ArrayList;
 import java.util.List;
 import mmo.Core.MMO;
 import mmo.Core.MMOPlugin;
