@@ -17,24 +17,28 @@
 package mmo.Party;
 
 import java.util.List;
+
 import mmo.Core.MMO;
-import mmo.Core.MMOPlugin;
-import mmo.Core.util.EnumBitSet;
 import mmo.Core.MMOMinecraft;
+import mmo.Core.MMOPlugin;
 import mmo.Core.PartyAPI.Party;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event.Priority;
-import org.bukkit.event.Event.Type;
-import org.bukkit.util.config.Configuration;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+
+import org.getspout.spoutapi.event.spout.SpoutCraftEnableEvent;
 import org.getspout.spoutapi.gui.Container;
 import org.getspout.spoutapi.gui.ContainerType;
 import org.getspout.spoutapi.gui.GenericContainer;
 import org.getspout.spoutapi.player.SpoutPlayer;
 
-public class MMOParty extends MMOPlugin {
-
+public class MMOParty extends MMOPlugin implements Listener {
 	static final PartyAPI partyapi = PartyAPI.instance;
 	private int updateTask;
 	/**
@@ -52,23 +56,16 @@ public class MMOParty extends MMOPlugin {
 	static boolean config_leave_on_quit = false;
 
 	@Override
-	public EnumBitSet mmoSupport(EnumBitSet support) {
-		support.set(Support.MMO_PLAYER);
-		return support;
-	}
-
-	@Override
 	public void onEnable() {
 		super.onEnable();
 		PartyAPI.plugin = this;
 		MMOMinecraft.addAPI(partyapi);
 
-		pm.registerEvent(Type.CUSTOM_EVENT, new PartyDamage(this), Priority.Highest, this);
-		pm.registerEvent(Type.CUSTOM_EVENT, new PartyChannel(), Priority.Normal, this);
+		pm.registerEvents(new PartyDamage(this), this);
+		pm.registerEvents(new PartyChannel(), this);
 
 		updateTask = getServer().getScheduler().scheduleSyncRepeatingTask(this,
 				new Runnable() {
-
 					@Override
 					public void run() {
 						PartyAPI.updateAll();
@@ -77,7 +74,7 @@ public class MMOParty extends MMOPlugin {
 	}
 
 	@Override
-	public void loadConfiguration(Configuration cfg) {
+	public void loadConfiguration(FileConfiguration cfg) {
 		config_ui_align = cfg.getString("ui.default.align", config_ui_align);
 		config_ui_left = cfg.getInt("ui.default.left", config_ui_left);
 		config_ui_top = cfg.getInt("ui.default.top", config_ui_top);
@@ -262,8 +259,9 @@ public class MMOParty extends MMOPlugin {
 		return false;
 	}
 
-	@Override
-	public void onPlayerJoin(Player player) {
+	@EventHandler
+	public void onPlayerJoin(PlayerJoinEvent event) {
+		Player player = event.getPlayer();
 		PartyAPI party = partyapi.find(player);
 		if (party.isParty()) {
 			party.update();
@@ -284,8 +282,9 @@ public class MMOParty extends MMOPlugin {
 		}
 	}
 
-	@Override
-	public void onPlayerQuit(Player player) {
+	@EventHandler
+	public void onPlayerQuit(PlayerQuitEvent event) {
+		Player player = event.getPlayer();
 		PartyAPI.containers.remove(player);
 		PartyAPI party = partyapi.find(player);
 		if (party != null) {
@@ -299,8 +298,9 @@ public class MMOParty extends MMOPlugin {
 		}
 	}
 
-	@Override
-	public void onSpoutCraftPlayer(SpoutPlayer player) {
+	@EventHandler
+	public void onSpoutcraftEnable(SpoutCraftEnableEvent event) {
+		SpoutPlayer player = event.getPlayer();
 		Container container = getContainer(player, config_ui_align, config_ui_left, config_ui_top);
 		Container members = new GenericContainer();
 		container.setLayout(ContainerType.HORIZONTAL).addChildren(members, new GenericContainer()).setWidth(config_ui_maxwidth);

@@ -21,21 +21,23 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import mmo.Core.MMO;
 import mmo.Core.PartyAPI.Party;
 import mmo.Core.gui.GenericLivingEntity;
 import mmo.Core.util.ArrayListString;
+
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
+
 import org.getspout.spoutapi.gui.Container;
 import org.getspout.spoutapi.gui.Widget;
 
 public class PartyAPI implements Party {
-
 	/**
 	 * Singleton instance - only for finding parties
 	 */
@@ -88,7 +90,7 @@ public class PartyAPI implements Party {
 
 	/**
 	 * Constructor.
-	 * @param names The player names to add
+	 * @param names   The player names to add
 	 * @param invites The player names to invite
 	 */
 	private PartyAPI(String leader, String names, String invite) {
@@ -113,8 +115,8 @@ public class PartyAPI implements Party {
 
 	/**
 	 * Save various state changes about the party.
-	 * @param player a player who has changed, either left or not leader
-	 * @param setLeader the leader has changed
+	 * @param player	 a player who has changed, either left or not leader
+	 * @param setLeader  the leader has changed
 	 * @param setMembers a member has joined or left
 	 * @param setInvites someone has been invited or accepted an invite
 	 */
@@ -505,7 +507,7 @@ public class PartyAPI implements Party {
 
 	/**
 	 * Get an array of member_name:status strings, used for /party status
-	 * @return 
+	 * @return
 	 */
 	private HashMap<String, String> getStatus() {
 		HashMap<String, String> status = new HashMap<String, String>();

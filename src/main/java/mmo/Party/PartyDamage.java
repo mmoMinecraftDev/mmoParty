@@ -17,18 +17,19 @@
 package mmo.Party;
 
 import mmo.Core.DamageAPI.MMODamageEvent;
-import mmo.Core.MMOListener;
+
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 
-public class PartyDamage extends MMOListener {
-
+public class PartyDamage implements Listener {
 	MMOParty plugin;
 
 	PartyDamage(MMOParty plugin) {
 		this.plugin = plugin;
 	}
 
-	@Override
+	@EventHandler
 	public void onMMOPVPDamage(MMODamageEvent event) {
 		if (MMOParty.config_no_party_pvp && PartyAPI.instance.find((Player) event.getAttacker()).contains((Player) event.getDefender())) {
 			if (MMOParty.config_no_party_pvp_quiet) {
