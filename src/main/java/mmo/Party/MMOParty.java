@@ -63,7 +63,8 @@ public class MMOParty extends MMOPlugin implements Listener {
 
 		pm.registerEvents(new PartyDamage(this), this);
 		pm.registerEvents(new PartyChannel(), this);
-
+		pm.registerEvents(this, this);		
+		
 		updateTask = getServer().getScheduler().scheduleSyncRepeatingTask(this,
 				new Runnable() {
 					@Override

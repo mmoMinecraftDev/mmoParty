@@ -1,8 +1,8 @@
 name: mmoParty
 main: mmo.Party.MMOParty
-version: 1.5
+version: 1.6
 website: http://forums.bukkit.org/threads/31055/
-author: Rycochet <rycochet@rycochet.com>
+author: Rycochet <rycochet@rycochet.com>, Dockter
 depend: [Spout,mmoCore]
 softdepend: [mmoChat]
 
