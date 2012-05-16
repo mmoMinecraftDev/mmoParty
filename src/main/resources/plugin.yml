@@ -1,14 +1,15 @@
 name: mmoParty
+version: ${releaseVersion} b${buildNumber}
+description: Provides leadership based parties with optional damage protection.
+author: mmoMinecraftDev
+website: http://mmo.me.uk
+
 main: mmo.Party.MMOParty
-version: 1.6
-website: http://forums.bukkit.org/threads/31055/
-author: Rycochet <rycochet@rycochet.com>, Dockter
-depend: [Spout,mmoCore]
+depend: [Spout, mmoCore]
 softdepend: [mmoChat]
 
-description: Simply "party" system for players. Single party leader, can invite others. When leader quits leadership falls to first invited etc. Uses Spout to display party members to everyone.
 commands:
-  party:
-    description: Invites, leaves, promotes...
-    aliases: [p,mmoparty]
-    usage: /party help
+    party:
+        description: Invites, leaves, promotes...
+        aliases: [p, mmoparty]
+        usage: /party help
