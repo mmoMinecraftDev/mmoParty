@@ -1,0 +1,13 @@
+# #Party Configuration
+no_party_pvp: true
+ui:
+  default:
+    width: 160
+    align: TOP_LEFT
+    left: 3
+    top: 3
+always_show: true
+no_party_pvp_quiet: false
+max_party_size: 6
+show_pets: true
+leave_on_quit: false

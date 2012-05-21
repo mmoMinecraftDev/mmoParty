@@ -21,7 +21,9 @@ import java.util.List;
 import mmo.Core.MMO;
 import mmo.Core.MMOMinecraft;
 import mmo.Core.MMOPlugin;
+import mmo.Core.MMOPlugin.Support;
 import mmo.Core.PartyAPI.Party;
+import mmo.Core.util.EnumBitSet;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -55,6 +57,12 @@ public class MMOParty extends MMOPlugin implements Listener {
 	static boolean config_show_pets = true;
 	static boolean config_leave_on_quit = false;
 
+	@Override
+	public EnumBitSet mmoSupport(final EnumBitSet support) {
+		support.set(Support.MMO_AUTO_EXTRACT);
+		return support;
+	}
+	
 	@Override
 	public void onEnable() {
 		super.onEnable();
