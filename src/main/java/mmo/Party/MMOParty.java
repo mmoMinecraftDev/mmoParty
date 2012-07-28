@@ -307,6 +307,8 @@ public class MMOParty extends MMOPlugin implements Listener {
 	
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onEntityDamage(EntityDamageEvent event) {
+		if(event.isCancelled())
+			return;
 		Entity entity = event.getEntity();
 		if(!(entity instanceof Player))
 			return;
