@@ -28,9 +28,12 @@ import mmo.Core.util.EnumBitSet;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -42,7 +45,6 @@ import org.getspout.spoutapi.player.SpoutPlayer;
 
 public class MMOParty extends MMOPlugin implements Listener {
 	static final PartyAPI partyapi = PartyAPI.instance;
-	private int updateTask;
 	/**
 	 * Config options
 	 */
@@ -72,14 +74,6 @@ public class MMOParty extends MMOPlugin implements Listener {
 		pm.registerEvents(new PartyDamage(this), this);
 		pm.registerEvents(new PartyChannel(), this);
 		pm.registerEvents(this, this);		
-		
-		updateTask = getServer().getScheduler().scheduleSyncRepeatingTask(this,
-				new Runnable() {
-					@Override
-					public void run() {
-						PartyAPI.updateAll();
-					}
-				}, 20, 20);
 	}
 
 	@Override
@@ -94,12 +88,6 @@ public class MMOParty extends MMOPlugin implements Listener {
 		config_no_party_pvp_quiet = cfg.getBoolean("no_party_pvp_quiet", config_no_party_pvp_quiet);
 		config_show_pets = cfg.getBoolean("show_pets", config_show_pets);
 		config_leave_on_quit = cfg.getBoolean("leave_on_quit", config_leave_on_quit);
-	}
-
-	@Override
-	public void onDisable() {
-		getServer().getScheduler().cancelTask(updateTask);
-		super.onDisable();
 	}
 
 	@Override
@@ -315,5 +303,19 @@ public class MMOParty extends MMOPlugin implements Listener {
 		container.setLayout(ContainerType.HORIZONTAL).addChildren(members, new GenericContainer()).setWidth(config_ui_maxwidth);
 		PartyAPI.containers.put(player, members);
 		PartyAPI.updateAll(player);
+	}
+	
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onEntityDamage(EntityDamageEvent event) {
+		if(event.isCancelled())
+			return;
+		Entity entity = event.getEntity();
+		if(!(entity instanceof Player))
+			return;
+		Player player = (Player) entity;
+		PartyAPI party = partyapi.find(player);
+		if(party != null) {
+			party.update();
+		}
 	}
 }
