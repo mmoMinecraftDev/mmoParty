@@ -5,7 +5,7 @@
 	<name>mmoParty</name>
 	<groupId>mmo.Party</groupId>
 	<artifactId>mmoParty</artifactId>
-	<version>1.6-SNAPSHOT</version>
+	<version>1.61-SNAPSHOT</version>
 	<url>http://github.com/mmoMinecraftDev/mmoParty</url>
 	<description>Provides leadership based parties with optional damage protection.</description>
 
