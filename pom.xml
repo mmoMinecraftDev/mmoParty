@@ -5,15 +5,15 @@
 	<name>mmoParty</name>
 	<groupId>mmo.Party</groupId>
 	<artifactId>mmoParty</artifactId>
-	<version>1.61-SNAPSHOT</version>
+	<version>1.7-SNAPSHOT</version>
 	<url>http://github.com/mmoMinecraftDev/mmoParty</url>
 	<description>Provides leadership based parties with optional damage protection.</description>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<bukkitVersion>1.2.5-R1.4-SNAPSHOT</bukkitVersion>
-		<spoutVersion>dev-SNAPSHOT</spoutVersion>
-		<coreVersion>2.3-SNAPSHOT</coreVersion>
+		<bukkitVersion>1.3.2-R1.0</bukkitVersion>
+        <spoutVersion>1.3.2-R1.0-SNAPSHOT</spoutVersion>
+        <coreVersion>2.4-SNAPSHOT</coreVersion>     
 		<buildNumber>0</buildNumber>
 	</properties>
 
@@ -63,7 +63,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.getspout</groupId>
-			<artifactId>spoutpluginapi</artifactId>
+			<artifactId>spoutplugin</artifactId>
 			<version>${spoutVersion}</version>
 			<scope>provided</scope>
 		</dependency>
