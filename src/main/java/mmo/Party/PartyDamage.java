@@ -31,7 +31,15 @@ public class PartyDamage implements Listener {
 
 	@EventHandler
 	public void onMMOPVPDamage(MMODamageEvent event) {
-		if (MMOParty.config_no_party_pvp && PartyAPI.instance.find((Player) event.getAttacker()).contains((Player) event.getDefender())) {
+		Player attacker = (Player) event.getAttacker();
+		Player defender = (Player) event.getDefender();
+		
+		if(!(attacker instanceof Player) || !(defender instanceof Player))
+		{
+			return;
+		}
+		
+		if (MMOParty.config_no_party_pvp && PartyAPI.instance.find(attacker).contains(defender) ) {
 			if (MMOParty.config_no_party_pvp_quiet) {
 				plugin.sendMessage((Player) event.getAttacker(), "Can't attack your own party!");
 			}
