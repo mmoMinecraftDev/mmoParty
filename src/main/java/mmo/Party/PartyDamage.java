@@ -18,6 +18,7 @@ package mmo.Party;
 
 import mmo.Core.DamageAPI.MMODamageEvent;
 
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -31,6 +32,13 @@ public class PartyDamage implements Listener {
 
 	@EventHandler
 	public void onMMOPVPDamage(MMODamageEvent event) {
+		 Entity attacker = event.getAttacker();
+		 Entity defender = event.getDefender();
+		
+		 if(!(attacker instanceof Player) || !(defender instanceof Player)) {
+			 return;
+		 }
+			 
 		if (MMOParty.config_no_party_pvp && PartyAPI.instance.find((Player) event.getAttacker()).contains((Player) event.getDefender())) {
 			if (MMOParty.config_no_party_pvp_quiet) {
 				plugin.sendMessage((Player) event.getAttacker(), "Can't attack your own party!");
